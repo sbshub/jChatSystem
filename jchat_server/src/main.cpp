@@ -8,11 +8,21 @@
 */
 
 // Required libraries
+#include "buffer.hpp"
 #include <iostream>
+
+// Required namespaces
+using namespace jchat;
 
 // Program entrypoint
 int main(int argc, char **argv) {
   std::cout << "jChatSystem - Server" << std::endl;
+
+  // Test Buffer class
+  Buffer buffer;
+  buffer.Write<uint64_t>(5666);
+
+  std::cout << "Buffer size = " << buffer.GetSize() << " bytes" << std::endl;
 
   return 0;
 }

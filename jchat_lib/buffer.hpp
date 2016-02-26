@@ -21,11 +21,13 @@ class Buffer {
   size_t current_position_;
   bool flip_endian_;
 
-  static void FlipEndian(uint8_t *buffer, size_t size) {
+  template<typename _TData>
+  static void FlipEndian(_TData *buffer, size_t size) {
+    uint8_t *p_buffer = *(uint8_t **)&buffer;
     for (size_t i = 0; i < size / 2; i++) {
-      uint8_t tmp = buffer[i];
-      buffer[i] = buffer[size - 1 - i];
-      buffer[size - 1 - i] = tmp;
+      uint8_t tmp = p_buffer[i];
+      p_buffer[i] = p_buffer[size - 1 - i];
+      p_buffer[size - 1 - i] = tmp;
     }
   }
 
@@ -35,7 +37,10 @@ public:
   }
 
   Buffer(const uint8_t *buffer, size_t size, bool flip_endian = false)
-    : buffer_(buffer, size), current_position_(0), flip_endian_(flip_endian) {
+    : current_position_(0), flip_endian_(flip_endian) {
+      for (size_t i = 0; i < size; i++) {
+        buffer_.push_back(buffer[i]);
+      }
   }
 
   ~Buffer() {
@@ -44,7 +49,7 @@ public:
 
   template<typename _TData>
   bool Read(_TData *obj) {
-    auto size = sizeof(_TData);
+    size_t size = sizeof(_TData);
     if (current_position_ + size > buffer_.size()) {
       return false;
     }
@@ -70,15 +75,16 @@ public:
 
   template<typename _TData>
   void Write(_TData obj) {
-    auto size = sizeof(_TData);
+    uint8_t *buffer = (uint8_t *)&obj;
+    size_t size = sizeof(_TData);
     if (flip_endian_) {
-      FlipEndian(&obj, size);
+      FlipEndian(buffer, size);
     }
     for (size_t i = 0; i < size; i++) {
-      if (current_position_ + i > this->buffer_.size()) {
-        buffer_.push_back(&obj[i]);
+      if (current_position_ + i >= this->buffer_.size()) {
+        buffer_.push_back(buffer[i]);
       } else {
-        buffer_[current_position_] = &obj[i];
+        buffer_[current_position_] = buffer[i];
       }
       current_position_++;
     }
@@ -116,7 +122,10 @@ public:
   }
 
   void Clear() {
-    memset(buffer_.data(), 0, buffer_.size());
+    // Set all the data to 0 in case we had important data in the buffer
+    for (size_t i = 0; i < buffer_.size(); i++) {
+      buffer_[i] = 0;
+    }
     buffer_.clear();
     buffer_.shrink_to_fit();
     current_position_ = 0;
