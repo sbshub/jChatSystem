@@ -53,7 +53,11 @@ public:
     if (current_position_ + size > buffer_.size()) {
       return false;
     }
-    memcpy(obj, buffer_.data() + current_position_, size);
+    uint8_t *p_buffer = *(uint8_t **)&obj;
+    for (size_t i = 0; i < size; i++) {
+      p_buffer[i] = buffer_.data()[current_position_];
+      current_position_++;
+    }
     if (flip_endian_) {
       FlipEndian(obj, size);
     }
