@@ -7,9 +7,10 @@
 *
 */
 
-#ifndef common_buffer_hpp_
-#define common_buffer_hpp_
+#ifndef jchat_lib_buffer_hpp_
+#define jchat_lib_buffer_hpp_
 
+// Required libraries
 #include <vector>
 #include <stdint.h>
 #include <stdlib.h>
@@ -123,4 +124,4 @@ public:
 };
 }
 
-#endif // common_buffer_hpp_
+#endif // jchat_lib_buffer_hpp_

@@ -7,9 +7,10 @@
 *
 */
 
-#ifndef common_event_hpp_
-#define common_event_hpp_
+#ifndef jchat_lib_event_hpp_
+#define jchat_lib_event_hpp_
 
+// Required libraries
 #include <mutex>
 #include <vector>
 #include <functional>
@@ -68,4 +69,4 @@ public:
 };
 }
 
-#endif // common_event_hpp_
+#endif // jchat_lib_event_hpp_

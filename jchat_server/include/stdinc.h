@@ -7,9 +7,9 @@
 *
 */
 
-#ifndef jchat_lib_tcp_server_hpp_
-#define jchat_lib_tcp_server_hpp_
+#ifndef jchat_server_stdinc_h_
+#define jchat_server_stdinc_h_
 
 
 
-#endif // jchat_lib_tcp_server_hpp_
+#endif // jchat_server_stdinc_h_

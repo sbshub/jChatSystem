@@ -7,9 +7,12 @@
 *
 */
 
-#ifndef jchat_lib_tcp_server_hpp_
-#define jchat_lib_tcp_server_hpp_
+// Required libraries
+#include <iostream>
 
+// Program entrypoint
+int main(int argc, char **argv) {
+  std::cout << "jChatSystem - Client" << std::endl;
 
-
-#endif // jchat_lib_tcp_server_hpp_
+  return 0;
+}
