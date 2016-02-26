@@ -122,18 +122,18 @@ public:
   void Write(_TData obj) {
     // Get the pointer to the data object and flip the object in
     // case the endian order needs changing
-    uint8_t *buffer = (uint8_t *)&obj;
+    uint8_t *p_buffer = (uint8_t *)&obj;
     size_t size = sizeof(_TData);
     if (flip_endian_) {
-      FlipEndian(buffer, size);
+      FlipEndian(p_buffer, size);
     }
     for (size_t i = 0; i < size; i++) {
       // Check if we need to append to the buffer or
       // replace existing data
       if (current_position_ + i >= this->buffer_.size()) {
-        buffer_.push_back(buffer[i]);
+        buffer_.push_back(p_buffer[i]);
       } else {
-        buffer_[current_position_] = buffer[i];
+        buffer_[current_position_] = p_buffer[i];
       }
       current_position_++;
     }
