@@ -22,12 +22,12 @@ class Buffer {
   bool flip_endian_;
 
   static void FlipEndian(uint8_t *buffer, size_t size) {
-		for (size_t i = 0; i < size / 2; i++) {
-			uint8_t tmp = buffer[i];
-			buffer[i] = buffer[size - 1 - i];
-			buffer[size - 1 - i] = tmp;
-		}
-	}
+    for (size_t i = 0; i < size / 2; i++) {
+      uint8_t tmp = buffer[i];
+      buffer[i] = buffer[size - 1 - i];
+      buffer[size - 1 - i] = tmp;
+    }
+  }
 
 public:
   Buffer(bool flip_endian = false) : current_position_(0),
@@ -86,10 +86,10 @@ public:
 
   template<typename _TData>
 	void WriteArray(_TData *obj, size_t size) {
-		for (size_t i = 0; i < size; i++) {
-			Write(obj[i]);
-		}
-	}
+    for (size_t i = 0; i < size; i++) {
+      Write(obj[i]);
+    }
+  }
 
   size_t GetPosition() {
     return current_position_;

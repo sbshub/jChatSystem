@@ -7,9 +7,9 @@
 *
 */
 
-#ifndef jchat_server_stdinc_h_
-#define jchat_server_stdinc_h_
+#ifndef jchat_client_stdinc_h_
+#define jchat_client_stdinc_h_
 
 
 
-#endif // jchat_server_stdinc_h_
+#endif // jchat_client_stdinc_h_

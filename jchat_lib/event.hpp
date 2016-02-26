@@ -25,46 +25,46 @@ struct EventCallback {
 template<typename... _TArgs>
 class Event {
   std::mutex event_mutex_;
-	std::vector<EventCallback<_TArgs...>> callbacks_;
+  std::vector<EventCallback<_TArgs...>> callbacks_;
 
 public:
   Event() {}
   Event(const Event &event) {}
 
   template<typename _TFunction>
-	Event &Add(_TFunction function, bool is_temporary = false) {
+  Event &Add(_TFunction function, bool is_temporary = false) {
     event_mutex_.lock();
 
-		EventCallback<_TArgs...> callback;
-		callback.Function = function;
-		callback.IsTemporary = is_temporary;
-		callbacks_.push_back(callback);
+    EventCallback<_TArgs...> callback;
+    callback.Function = function;
+    callback.IsTemporary = is_temporary;
+    callbacks_.push_back(callback);
 
-		event_mutex_.unlock();
+    event_mutex_.unlock();
 
-		return *this;
+    return *this;
   }
 
   bool operator()(_TArgs... arguments) {
     event_mutex_.lock();
 
-		bool success = true;
+    bool success = true;
 
-		for (auto iterator = callbacks_.begin(); iterator != callbacks_.end();) {
-			if (!iterator->Function(arguments...)) {
-				success = false;
-			}
+    for (auto iterator = callbacks_.begin(); iterator != callbacks_.end();) {
+      if (!iterator->Function(arguments...)) {
+        success = false;
+      }
 
-			if (iterator->IsTemporary) {
-				iterator = callbacks_.erase(iterator);
-			} else {
-				++iterator;
-			}
-		}
+      if (iterator->IsTemporary) {
+        iterator = callbacks_.erase(iterator);
+      } else {
+        ++iterator;
+      }
+    }
 
-		event_mutex_.unlock();
+    event_mutex_.unlock();
 
-		return success;
+    return success;
   }
 };
 }
