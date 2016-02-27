@@ -10,6 +10,10 @@
 #ifndef jchat_lib_tcp_client_hpp_
 #define jchat_lib_tcp_client_hpp_
 
+namespace jchat {
+class TcpClient {
 
+};
+}
 
 #endif // jchat_lib_tcp_client_hpp_

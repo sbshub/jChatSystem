@@ -10,6 +10,12 @@
 #ifndef jchat_lib_platform_h_
 #define jchat_lib_platform_h_
 
-
+#if defined(_WIN32) || defined(_WIN64)
+#define OS_WIN
+#elif defined(__linux__)
+#define OS_LINUX
+#else
+#define OS_UNKNOWN
+#endif
 
 #endif // jchat_lib_platform_h_
