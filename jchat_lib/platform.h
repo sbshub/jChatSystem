@@ -15,7 +15,7 @@
 #elif defined(__linux__)
 #define OS_LINUX
 #else
-#define OS_UNKNOWN
+#error "Unsupported platform!"
 #endif
 
 #endif // jchat_lib_platform_h_

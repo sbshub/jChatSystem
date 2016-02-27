@@ -44,8 +44,6 @@ typedef int SOCKET;
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 #include <ws2ipdef.h>
-#else
-#error "Unsupported platform!"
 #endif
 
 #ifndef JCHAT_TCP_SERVER_BACKLOG
