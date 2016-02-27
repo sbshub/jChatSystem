@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 
 #ifndef __SOCKET__
@@ -65,18 +66,20 @@ class TcpServer {
   std::thread worker_thread_;
 
   void worker_loop() {
-    // TODO: Write
+    while (is_listening_) {
+      // TODO: Write
+    }
   }
 
 public:
   TcpServer(uint16_t port) : port_(port), is_listening_(false),
     listen_socket_(0) {
     listen_endpoint_.sin_family = AF_INET;
-    listen_endpoint_.sin_port = port;
+    listen_endpoint_.sin_port = htons(port);
 #if defined(OS_LINUX)
-    listen_endpoint_.sin_addr.s_addr = inet_aton("0.0.0.0");
+    listen_endpoint_.sin_addr.s_addr = inet_addr("0.0.0.0");
 #elif defined(OS_WIN) // Currently unsupported and untested
-    listen_endpoint_.sin_addr.S_addr = inet_aton("0.0.0.0");
+    listen_endpoint_.sin_addr.S_addr = inet_addr("0.0.0.0");
 #endif
   }
 
@@ -105,8 +108,8 @@ public:
         return false;
     }
 
-    if (bind(listen_socket_, &listen_endpoint_, sizeof(listen_endpoint_))
-      == SOCKET_ERROR) {
+    if (bind(listen_socket_, (const sockaddr *)&listen_endpoint_,
+      sizeof(listen_endpoint_)) == SOCKET_ERROR) {
       closesocket(listen_socket_);
       return false;
     }
@@ -118,7 +121,7 @@ public:
 
     is_listening_ = true;
 
-    worker_thread_ = std::thread(worker_loop);
+    worker_thread_ = std::thread(&TcpServer::worker_loop, this);
 
     return true;
   }

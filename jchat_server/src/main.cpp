@@ -16,6 +16,10 @@ int main(int argc, char **argv) {
   std::cout << "jChatSystem - Server" << std::endl;
 
   jchat::TcpServer tcp_server(9998);
+  if (tcp_server.Start()) {
+    std::cout << "Started listening on port 9998" << std::endl;
+    while (true) {} // Waiting forever, this is bad!
+  }
 
   return 0;
 }
