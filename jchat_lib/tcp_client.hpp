@@ -136,6 +136,7 @@ public:
 
     if (connect(client_socket_, (const sockaddr *)&client_endpoint_,
       sizeof(client_endpoint_)) == SOCKET_ERROR) {
+      closesocket(client_socket_);
       return false;
     }
 
