@@ -10,15 +10,19 @@
 // Required libraries
 #include "tcp_server.hpp"
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 // Program entrypoint
 int main(int argc, char **argv) {
   std::cout << "jChatSystem - Server" << std::endl;
 
-  jchat::TcpServer tcp_server(9998);
+  jchat::TcpServer tcp_server("0.0.0.0", 9998);
   if (tcp_server.Start()) {
-    std::cout << "Started listening on port 9998" << std::endl;
-    while (true) {} // Waiting forever, this is bad!
+    std::cout << "Started listening on 0.0.0.0:9998" << std::endl;
+    while (true) {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
   }
 
   return 0;

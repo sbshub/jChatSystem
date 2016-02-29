@@ -23,6 +23,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <unistd.h>
 
 #ifndef __SOCKET__
@@ -52,6 +53,7 @@ typedef int SOCKET;
 
 namespace jchat {
 class TcpServer {
+  const char *hostname_;
   uint16_t port_;
   bool is_listening_;
   SOCKET listen_socket_;
@@ -70,15 +72,38 @@ class TcpServer {
   }
 
 public:
-  TcpServer(uint16_t port) : port_(port), is_listening_(false),
-    listen_socket_(0) {
+  TcpServer(const char *hostname, uint16_t port) : hostname_(hostname),
+    port_(port), is_listening_(false), listen_socket_(0) {
     listen_endpoint_.sin_family = AF_INET;
     listen_endpoint_.sin_port = htons(port);
 #if defined(OS_LINUX)
     listen_endpoint_.sin_addr.s_addr = inet_addr("0.0.0.0");
-#elif defined(OS_WIN) // Currently unsupported and untested
-    listen_endpoint_.sin_addr.S_addr = inet_addr("0.0.0.0");
+#elif defined(OS_WIN) // Currently untested
+    listen_endpoint_.sin_addr.S_un.S_addr = inet_addr("0.0.0.0");
 #endif
+
+    // Get remote address info
+  	addrinfo *result = nullptr;
+  	addrinfo hints;
+
+  	hints.ai_family = AF_UNSPEC;
+  	hints.ai_socktype = SOCK_STREAM;
+  	hints.ai_protocol = IPPROTO_TCP;
+
+  	int return_value = getaddrinfo(hostname, std::to_string(port).c_str(),
+      &hints, &result);
+  	if (return_value == 0) {
+      for (addrinfo *ptr = result; ptr != NULL; ptr = ptr->ai_next) {
+				if (ptr->ai_family == AF_INET) {
+          sockaddr_in *endpoint_info = (sockaddr_in *)ptr->ai_addr;
+#if defined(OS_LINUX)
+					listen_endpoint_.sin_addr.s_addr = endpoint_info->sin_addr.s_addr;
+#elif defined(OS_WIN) // Currently untested
+					listen_endpoint_.sin_addr.S_un.S_addr = endpoint_info->sin_addr.S_un.S_addr;
+#endif
+        }
+      }
+    }
   }
 
   ~TcpServer() {
@@ -103,7 +128,7 @@ public:
 
     if ((listen_socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))
       == SOCKET_ERROR) {
-        return false;
+      return false;
     }
 
     if (bind(listen_socket_, (const sockaddr *)&listen_endpoint_,
@@ -140,9 +165,9 @@ public:
     return true;
   }
 
-  Event<TcpClient> OnClientConnected;
-  Event<TcpClient> OnClientDisconnected;
-  Event<TcpClient, Buffer> OnDataReceived;
+  Event<TcpClient &> OnClientConnected;
+  Event<TcpClient &> OnClientDisconnected;
+  Event<TcpClient &, Buffer &> OnDataReceived;
 };
 }
 

@@ -8,11 +8,14 @@
 */
 
 // Required libraries
+#include "tcp_client.hpp"
 #include <iostream>
 
 // Program entrypoint
 int main(int argc, char **argv) {
   std::cout << "jChatSystem - Client" << std::endl;
 
+  jchat::TcpClient tcp_client("127.0.0.1", 9998);
+  
   return 0;
 }

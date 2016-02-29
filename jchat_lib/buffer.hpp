@@ -140,7 +140,7 @@ public:
   }
 
   template<typename _TData>
-	void WriteArray(_TData *obj, size_t size) {
+  void WriteArray(_TData *obj, size_t size) {
     // Write each object in the array
     for (size_t i = 0; i < size; i++) {
       Write(obj[i]);
