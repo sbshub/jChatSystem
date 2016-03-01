@@ -4,7 +4,6 @@
 *   This program is licensed under the GNU General
 *   Public License. To view the full license, check
 *   LICENSE in the project root.
-*
 */
 
 #ifndef jchat_lib_buffer_hpp_
