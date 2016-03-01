@@ -105,24 +105,25 @@ public:
 #endif
 
     // Get remote address info
-  	addrinfo *result = nullptr;
-  	addrinfo hints;
+    addrinfo *result = nullptr;
+    addrinfo hints;
 
-  	hints.ai_family = AF_UNSPEC;
-  	hints.ai_socktype = SOCK_STREAM;
-  	hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
 
-  	int return_value = getaddrinfo(hostname, std::to_string(port).c_str(),
+    int return_value = getaddrinfo(hostname, std::to_string(port).c_str(),
       &hints, &result);
-  	if (return_value != SOCKET_ERROR) {
+    if (return_value != SOCKET_ERROR) {
       for (addrinfo *ptr = result; ptr != NULL; ptr = ptr->ai_next) {
-				if (ptr->ai_family == AF_INET) {
+        if (ptr->ai_family == AF_INET) {
           sockaddr_in *endpoint_info = (sockaddr_in *)ptr->ai_addr;
 #if defined(OS_LINUX)
-					listen_endpoint_.sin_addr.s_addr = endpoint_info->sin_addr.s_addr;
+          listen_endpoint_.sin_addr.s_addr = endpoint_info->sin_addr.s_addr;
 #elif defined(OS_WIN) // Currently untested
-					listen_endpoint_.sin_addr.S_un.S_addr = endpoint_info->sin_addr.S_un.S_addr;
+          listen_endpoint_.sin_addr.S_un.S_addr
+            = endpoint_info->sin_addr.S_un.S_addr;
 #endif
         }
       }
