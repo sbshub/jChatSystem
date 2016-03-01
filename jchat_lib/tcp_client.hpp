@@ -104,6 +104,8 @@ public:
         }
       }
     }
+
+     freeaddrinfo(result);
   }
 
   // NOTE: For internal usage only!

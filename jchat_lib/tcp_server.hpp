@@ -128,6 +128,8 @@ public:
         }
       }
     }
+
+     freeaddrinfo(result);
   }
 
   ~TcpServer() {
