@@ -48,6 +48,9 @@ typedef int SOCKET;
 #include <ws2ipdef.h>
 #endif
 
+// NOTE: DEBUG!
+#include <stdio.h>
+
 #ifndef JCHAT_TCP_SERVER_BACKLOG
 #define JCHAT_TCP_SERVER_BACKLOG 50
 #endif // JCHAT_TCP_SERVER_BACKLOG
@@ -72,6 +75,14 @@ class TcpServer {
       sockaddr_in client_endpoint;
       uint32_t client_endpoint_size = sizeof(client_endpoint);
       // TODO/NOTE/FIXME: This is actually blocking, which needs fixing...
+
+      // NOTE: Okay, so this is setting the socket to non-blocking state,
+      // meaning our current non-blocking set code is not working correctly
+      // TODO: Research and fix!
+      fcntl(listen_socket_, F_SETFL, O_NONBLOCK);// TEMPORARY, BAD...
+
+
+      printf("cycle!\n");
       SOCKET client_socket = accept(listen_socket_,
         (sockaddr *)&client_endpoint, &client_endpoint_size);
       if (client_socket != SOCKET_ERROR) {
