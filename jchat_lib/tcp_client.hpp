@@ -111,7 +111,7 @@ public:
     bool is_blocking = true)
     : client_socket_(client_socket), client_endpoint_(remote_endpoint),
     is_blocking_(is_blocking), is_connected_(true), is_internal_(true) {
-    if (is_blocking) {
+    if (!is_blocking) {
 #if defined(OS_LINUX)
       uint32_t flags = fcntl(client_socket, F_GETFL, 0);
       if (flags != SOCKET_ERROR) {
@@ -160,7 +160,7 @@ public:
       return false;
     }
 
-    if (is_blocking_) {
+    if (!is_blocking_) {
 #if defined(OS_LINUX)
       uint32_t flags = fcntl(client_socket_, F_GETFL, 0);
       if (flags != SOCKET_ERROR) {

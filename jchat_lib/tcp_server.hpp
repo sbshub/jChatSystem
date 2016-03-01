@@ -154,7 +154,7 @@ public:
       return false;
     }
 
-    if (is_blocking_) {
+    if (!is_blocking_) {
 #if defined(OS_LINUX)
       uint32_t flags = fcntl(listen_socket_, F_GETFL, 0);
       if (flags != SOCKET_ERROR) {
