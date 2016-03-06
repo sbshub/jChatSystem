@@ -8,10 +8,10 @@ NOTE: Make sure you have git, g++, and make installed on your system.
 
 1. Download, or clone repository using `git clone https://github.com/Imposter/jChatSystem/`
 2. Use `make [all|clean|install|uninstall]` to complete the desired operation.  
-* `all` - Cleans and then builds the chat server and client
-* `clean` - Cleans the project directories
-* `install` - Installs the chat server and client to the system (TODO!)
-* `uninstall` - Uninstalls the chat server and client from the system (TODO!)
+  * `all` - Cleans and then builds the chat server and client
+  * `clean` - Cleans the project directories
+  * `install` - Installs the chat server and client to the system (TODO!)
+  * `uninstall` - Uninstalls the chat server and client from the system (TODO!)
 
 ## Contributing
 
