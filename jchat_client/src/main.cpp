@@ -16,7 +16,7 @@
 int main(int argc, char **argv) {
   std::cout << "jChatSystem - Client" << std::endl;
 
-  jchat::TcpClient tcp_client("127.0.0.1", 9998, false);
+  jchat::TcpClient tcp_client("127.0.0.1", 9998);
   if (tcp_client.Connect()) {
     std::cout << "Connected to 127.0.0.1:9998" << std::endl;
     while (true) {

@@ -16,7 +16,7 @@
 int main(int argc, char **argv) {
   std::cout << "jChatSystem - Server" << std::endl;
 
-  jchat::TcpServer tcp_server("0.0.0.0", 9998, false);
+  jchat::TcpServer tcp_server("0.0.0.0", 9998);
   tcp_server.OnClientConnected.Add([](jchat::TcpClient &tcp_client) {
     std::cout << "Client connected!" << std::endl;
     return true;

@@ -15,7 +15,6 @@
 #include "buffer.hpp"
 #include <mutex>
 #include <thread>
-#if defined(OS_LINUX)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -39,22 +38,14 @@ typedef int SOCKET;
 #define __CLOSE_SOCKET__
 #define closesocket(socket_fd) close(socket_fd)
 #endif // __CLOSE_SOCKET__
-#elif defined(OS_WIN)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <Winsock2.h>
-#include <ws2tcpip.h>
-#include <ws2ipdef.h>
-#endif
-
-// NOTE: DEBUG!
-#include <stdio.h>
 
 namespace jchat {
+class TcpServer;
 class TcpClient {
+  friend class TcpServer;
+
   const char *hostname_;
   uint16_t port_;
-  bool is_blocking_;
   bool is_connected_;
   bool is_internal_;
   SOCKET client_socket_;
@@ -69,16 +60,12 @@ class TcpClient {
   }
 
 public:
-  TcpClient(const char *hostname, uint16_t port, bool is_blocking = true)
-    : hostname_(hostname), port_(port), is_blocking_(is_blocking),
-    client_socket_(0), is_connected_(false), is_internal_(false) {
+  TcpClient(const char *hostname, uint16_t port)
+    : hostname_(hostname), port_(port), client_socket_(0), is_connected_(false),
+    is_internal_(false) {
     client_endpoint_.sin_family = AF_INET;
     client_endpoint_.sin_port = htons(port);
-#if defined(OS_LINUX)
     client_endpoint_.sin_addr.s_addr = inet_addr("127.0.0.1");
-#elif defined(OS_WIN) // Currently untested
-    client_endpoint_.sin_addr.S_addr = inet_addr("127.0.0.1");
-#endif
 
     // Get remote address info
     addrinfo *result = nullptr;
@@ -109,21 +96,13 @@ public:
   }
 
   // NOTE: For internal usage only!
-  TcpClient(SOCKET client_socket, sockaddr_in remote_endpoint,
-    bool is_blocking = true)
+  TcpClient(SOCKET client_socket, sockaddr_in remote_endpoint)
     : client_socket_(client_socket), client_endpoint_(remote_endpoint),
-    is_blocking_(is_blocking), is_connected_(true), is_internal_(true) {
-    if (!is_blocking) {
-#if defined(OS_LINUX)
-      uint32_t flags = fcntl(client_socket, F_GETFL, 0);
-      if (flags != SOCKET_ERROR) {
-        flags &= ~O_NONBLOCK;
-        fcntl(client_socket, F_SETFL, flags);
-      }
-#elif defined(OS_WIN)
-      uint32_t blocking = is_blocking ? 0 : 1;
-      ioctlsocket(client_socket, FIONBIO, &blocking);
-#endif
+    is_connected_(true), is_internal_(true) {
+    uint32_t flags = fcntl(client_socket, F_GETFL, 0);
+    if (flags != SOCKET_ERROR) {
+      flags |= O_NONBLOCK;
+      fcntl(client_socket, F_SETFL, flags);
     }
   }
 
@@ -134,9 +113,6 @@ public:
         worker_thread_.join();
       }
       closesocket(client_socket_);
-#if defined(OS_WIN)
-      WSACleanup();
-#endif
     }
   }
 
@@ -144,12 +120,6 @@ public:
     if (is_connected_ || is_internal_) {
       return false;
     }
-
-#if defined(OS_WIN)
-    if (WSAStartup(MAKEWORD(2, 2), &wsa_data_) != 0) {
-      return false;
-    }
-#endif
 
     if ((client_socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))
       == SOCKET_ERROR) {
@@ -162,26 +132,16 @@ public:
       return false;
     }
 
-    if (!is_blocking_) {
-#if defined(OS_LINUX)
-      uint32_t flags = fcntl(client_socket_, F_GETFL, 0);
-      if (flags != SOCKET_ERROR) {
-        flags &= ~O_NONBLOCK;
-        if (fcntl(client_socket_, F_SETFL, flags) == SOCKET_ERROR) {
-          closesocket(client_socket_);
-          return false;
-        }
-      } else {
+    uint32_t flags = fcntl(client_socket_, F_GETFL, 0);
+    if (flags != SOCKET_ERROR) {
+      flags |= O_NONBLOCK;
+      if (fcntl(client_socket_, F_SETFL, flags) == SOCKET_ERROR) {
         closesocket(client_socket_);
         return false;
       }
-#elif defined(OS_WIN)
-      uint32_t blocking = is_blocking ? 0 : 1;
-      if (ioctlsocket(client_socket_, FIONBIO, &blocking) == SOCKET_ERROR) {
-        closesocket(client_socket_);
-        return false;
-      }
-#endif
+    } else {
+      closesocket(client_socket_);
+      return false;
     }
 
     worker_thread_ = std::thread(&TcpClient::worker_loop, this);
@@ -202,10 +162,6 @@ public:
       worker_thread_.join();
     }
     closesocket(client_socket_);
-
-#if defined(OS_WIN)
-    WSACleanup();
-#endif
 
     OnDisconnected();
 

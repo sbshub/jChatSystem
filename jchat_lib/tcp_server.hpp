@@ -16,7 +16,6 @@
 #include "buffer.hpp"
 #include <mutex>
 #include <thread>
-#if defined(OS_LINUX)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -40,16 +39,6 @@ typedef int SOCKET;
 #define __CLOSE_SOCKET__
 #define closesocket(socket_fd) close(socket_fd)
 #endif // __CLOSE_SOCKET__
-#elif defined(OS_WIN)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <Winsock2.h>
-#include <ws2tcpip.h>
-#include <ws2ipdef.h>
-#endif
-
-// NOTE: DEBUG!
-#include <stdio.h>
 
 #ifndef JCHAT_TCP_SERVER_BACKLOG
 #define JCHAT_TCP_SERVER_BACKLOG 50
@@ -59,12 +48,8 @@ namespace jchat {
 class TcpServer {
   const char *hostname_;
   uint16_t port_;
-  bool is_blocking_;
   bool is_listening_;
   SOCKET listen_socket_;
-#if defined(OS_WIN)
-  WSADATA wsa_data_;
-#endif
   sockaddr_in listen_endpoint_;
   std::vector<TcpClient *> accepted_clients_;
   std::mutex accepted_clients_mutex_;
@@ -72,37 +57,39 @@ class TcpServer {
 
   void worker_loop() {
     while (is_listening_) {
+      // Accept a client
       sockaddr_in client_endpoint;
       uint32_t client_endpoint_size = sizeof(client_endpoint);
-      // TODO/NOTE/FIXME: This is actually blocking, which needs fixing...
-
-      // NOTE: Okay, so this is setting the socket to non-blocking state,
-      // meaning our current non-blocking set code is not working correctly
-      // TODO: Research and fix!
-      fcntl(listen_socket_, F_SETFL, O_NONBLOCK);// TEMPORARY, BAD...
-
-
-      printf("cycle!\n");
       SOCKET client_socket = accept(listen_socket_,
         (sockaddr *)&client_endpoint, &client_endpoint_size);
       if (client_socket != SOCKET_ERROR) {
-        TcpClient tcp_client(client_socket, client_endpoint);
+        TcpClient *tcp_client = new TcpClient(client_socket, client_endpoint);
+        accepted_clients_mutex_.lock();
+        accepted_clients_.push_back(tcp_client);
+        accepted_clients_mutex_.unlock();
+
         OnClientConnected(tcp_client);
       }
+
+      // Read from current clients
+      accepted_clients_mutex_.lock();
+      for (auto tcp_client : accepted_clients_) {
+        // TODO: Write!
+      }
+      accepted_clients_mutex_.unlock();
+
+      // TODO: Sleep
+
     }
   }
 
 public:
-  TcpServer(const char *hostname, uint16_t port, bool is_blocking = true)
-    : hostname_(hostname), port_(port), is_blocking_(is_blocking),
-    is_listening_(false), listen_socket_(0) {
+  TcpServer(const char *hostname, uint16_t port)
+    : hostname_(hostname), port_(port), is_listening_(false),
+    listen_socket_(0) {
     listen_endpoint_.sin_family = AF_INET;
     listen_endpoint_.sin_port = htons(port);
-#if defined(OS_LINUX)
     listen_endpoint_.sin_addr.s_addr = inet_addr("0.0.0.0");
-#elif defined(OS_WIN) // Currently untested
-    listen_endpoint_.sin_addr.S_un.S_addr = inet_addr("0.0.0.0");
-#endif
 
     // Get remote address info
     addrinfo *result = nullptr;
@@ -119,12 +106,7 @@ public:
       for (addrinfo *ptr = result; ptr != NULL; ptr = ptr->ai_next) {
         if (ptr->ai_family == AF_INET) {
           sockaddr_in *endpoint_info = (sockaddr_in *)ptr->ai_addr;
-#if defined(OS_LINUX)
           listen_endpoint_.sin_addr.s_addr = endpoint_info->sin_addr.s_addr;
-#elif defined(OS_WIN) // Currently untested
-          listen_endpoint_.sin_addr.S_un.S_addr
-            = endpoint_info->sin_addr.S_un.S_addr;
-#endif
         }
       }
     }
@@ -135,22 +117,17 @@ public:
   ~TcpServer() {
     if (is_listening_) {
       closesocket(listen_socket_);
-#if defined(OS_WIN)
-      WSACleanup();
-#endif
     }
+    for (auto tcp_client : accepted_clients_) {
+      delete tcp_client;
+    }
+    accepted_clients_.clear();
   }
 
   bool Start() {
     if (is_listening_) {
       return false;
     }
-
-#if defined(OS_WIN)
-    if (WSAStartup(MAKEWORD(2, 2), &wsa_data_) != 0) {
-      return false;
-    }
-#endif
 
     if ((listen_socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))
       == SOCKET_ERROR) {
@@ -168,26 +145,16 @@ public:
       return false;
     }
 
-    if (!is_blocking_) {
-#if defined(OS_LINUX)
-      uint32_t flags = fcntl(listen_socket_, F_GETFL, 0);
-      if (flags != SOCKET_ERROR) {
-        flags &= ~O_NONBLOCK;
-        if (fcntl(listen_socket_, F_SETFL, flags) == SOCKET_ERROR) {
-          closesocket(listen_socket_);
-          return false;
-        }
-      } else {
+    uint32_t flags = fcntl(listen_socket_, F_GETFL, 0);
+    if (flags != SOCKET_ERROR) {
+      flags |= O_NONBLOCK;
+      if (fcntl(listen_socket_, F_SETFL, flags) == SOCKET_ERROR) {
         closesocket(listen_socket_);
         return false;
       }
-#elif defined(OS_WIN)
-      uint32_t blocking = is_blocking ? 0 : 1;
-      if (ioctlsocket(listen_socket_, FIONBIO, &blocking) == SOCKET_ERROR) {
-        closesocket(listen_socket_);
-        return false;
-      }
-#endif
+    } else {
+      closesocket(listen_socket_);
+      return false;
     }
 
     is_listening_ = true;
@@ -206,9 +173,12 @@ public:
     worker_thread_.join();
     closesocket(listen_socket_);
 
-#if defined(OS_WIN)
-    WSACleanup();
-#endif
+    accepted_clients_mutex_.lock();
+    for (auto tcp_client : accepted_clients_) {
+      delete tcp_client;
+    }
+    accepted_clients_.clear();
+    accepted_clients_mutex_.unlock();
 
     return true;
   }
