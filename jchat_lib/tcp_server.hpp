@@ -10,22 +10,7 @@
 #define jchat_lib_tcp_server_hpp_
 
 // Required libraries
-#include "platform.h"
-#include "event.hpp"
 #include "tcp_client.hpp"
-#include "buffer.hpp"
-#include <chrono>
-#include <thread>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
 
 #ifndef __SOCKET__
 #define __SOCKET__
@@ -51,7 +36,7 @@ class TcpServer {
   uint16_t port_;
   bool is_listening_;
   SOCKET listen_socket_;
-  sockaddr_in listen_endpoint_;
+  IPEndpoint listen_endpoint_;
   std::vector<TcpClient *> accepted_clients_;
   std::mutex accepted_clients_mutex_;
   std::thread worker_thread_;
@@ -97,7 +82,8 @@ class TcpServer {
         SOCKET client_socket = accept(listen_socket_,
           (sockaddr *)&client_endpoint, &client_endpoint_size);
         if (client_socket != SOCKET_ERROR) {
-          TcpClient *tcp_client = new TcpClient(client_socket, client_endpoint);
+          TcpClient *tcp_client = new TcpClient(client_socket, client_endpoint,
+            listen_endpoint_.GetSocketEndpoint());
           accepted_clients_mutex_.lock();
           accepted_clients_.push_back(tcp_client);
           accepted_clients_mutex_.unlock();
@@ -119,6 +105,7 @@ class TcpServer {
             OnDataReceived(**tcp_client, buffer);
           } else {
             (*tcp_client)->is_connected_ = false;
+            closesocket((*tcp_client)->client_socket_);
             OnClientDisconnected(**tcp_client);
             tcp_client = accepted_clients_.erase(tcp_client);
             continue;
@@ -136,10 +123,7 @@ class TcpServer {
 public:
   TcpServer(const char *hostname, uint16_t port)
     : hostname_(hostname), port_(port), is_listening_(false),
-    listen_socket_(0) {
-    listen_endpoint_.sin_family = AF_INET;
-    listen_endpoint_.sin_port = htons(port);
-    listen_endpoint_.sin_addr.s_addr = inet_addr("0.0.0.0");
+    listen_socket_(0), listen_endpoint_("0.0.0.0", port) {
 
     // Get remote address info
     addrinfo *result = nullptr;
@@ -156,7 +140,7 @@ public:
       for (addrinfo *ptr = result; ptr != NULL; ptr = ptr->ai_next) {
         if (ptr->ai_family == AF_INET) {
           sockaddr_in *endpoint_info = (sockaddr_in *)ptr->ai_addr;
-          listen_endpoint_.sin_addr.s_addr = endpoint_info->sin_addr.s_addr;
+          listen_endpoint_.SetAddress(ntohl(endpoint_info->sin_addr.s_addr));
         }
       }
     }
@@ -184,8 +168,9 @@ public:
       return false;
     }
 
-    if (bind(listen_socket_, (const sockaddr *)&listen_endpoint_,
-      sizeof(listen_endpoint_)) == SOCKET_ERROR) {
+    sockaddr_in listen_endpoint = listen_endpoint_.GetSocketEndpoint();
+    if (bind(listen_socket_, (const sockaddr *)&listen_endpoint,
+      sizeof(listen_endpoint)) == SOCKET_ERROR) {
       closesocket(listen_socket_);
       return false;
     }
@@ -240,6 +225,10 @@ public:
 
     return send(tcp_client.client_socket_, buffer.GetBuffer(),
       buffer.GetSize(), 0) != SOCKET_ERROR;
+  }
+
+  IPEndpoint GetListenEndpoint() {
+    return listen_endpoint_;
   }
 
   Event<TcpClient &> OnClientConnected;

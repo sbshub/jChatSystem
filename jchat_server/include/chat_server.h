@@ -6,16 +6,13 @@
 *   LICENSE in the project root.
 */
 
-#ifndef jchat_common_message_type_h_
-#define jchat_common_message_type_h_
+#ifndef jchat_server_chat_server_h_
+#define jchat_server_chat_server_h_
 
 // Required libraries
-#include <stdint.h>
 
 namespace jchat {
-enum MessageType : uint8_t {
-  kMessageType_Hello = 1
-};
+
 }
 
-#endif // jchat_common_message_type_h_
+#endif // jchat_server_chat_server_h_
