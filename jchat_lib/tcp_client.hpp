@@ -13,7 +13,6 @@
 #include "platform.h"
 #include "event.hpp"
 #include "buffer.hpp"
-#include <mutex>
 #include <thread>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -24,6 +23,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #ifndef __SOCKET__
 #define __SOCKET__
@@ -39,6 +39,10 @@ typedef int SOCKET;
 #define closesocket(socket_fd) close(socket_fd)
 #endif // __CLOSE_SOCKET__
 
+#ifndef JCHAT_TCP_CLIENT_BUFFER_SIZE
+#define JCHAT_TCP_CLIENT_BUFFER_SIZE 8192
+#endif // JCHAT_TCP_CLIENT_BUFFER_SIZE
+
 namespace jchat {
 class TcpServer;
 class TcpClient {
@@ -51,11 +55,15 @@ class TcpClient {
   SOCKET client_socket_;
   sockaddr_in client_endpoint_;
   std::thread worker_thread_;
+  std::vector<uint8_t> read_buffer_;
 
   void worker_loop() {
     while (is_connected_) {
       // TODO: Write!
 
+
+      // Sleep
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }
 
@@ -63,6 +71,8 @@ public:
   TcpClient(const char *hostname, uint16_t port)
     : hostname_(hostname), port_(port), client_socket_(0), is_connected_(false),
     is_internal_(false) {
+    read_buffer_.resize(JCHAT_TCP_CLIENT_BUFFER_SIZE);
+
     client_endpoint_.sin_family = AF_INET;
     client_endpoint_.sin_port = htons(port);
     client_endpoint_.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -94,6 +104,8 @@ public:
   TcpClient(SOCKET client_socket, sockaddr_in remote_endpoint)
     : client_socket_(client_socket), client_endpoint_(remote_endpoint),
     is_connected_(true), is_internal_(true) {
+    read_buffer_.resize(JCHAT_TCP_CLIENT_BUFFER_SIZE);
+
     uint32_t flags = fcntl(client_socket, F_GETFL, 0);
     if (flags != SOCKET_ERROR) {
       flags |= O_NONBLOCK;

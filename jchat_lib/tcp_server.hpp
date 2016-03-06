@@ -14,7 +14,7 @@
 #include "event.hpp"
 #include "tcp_client.hpp"
 #include "buffer.hpp"
-#include <mutex>
+#include <chrono>
 #include <thread>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -25,6 +25,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #ifndef __SOCKET__
 #define __SOCKET__
@@ -56,30 +57,79 @@ class TcpServer {
   std::thread worker_thread_;
 
   void worker_loop() {
+    fd_set socket_set;
+    SOCKET max_socket = 0;
     while (is_listening_) {
-      // Accept a client
-      sockaddr_in client_endpoint;
-      uint32_t client_endpoint_size = sizeof(client_endpoint);
-      SOCKET client_socket = accept(listen_socket_,
-        (sockaddr *)&client_endpoint, &client_endpoint_size);
-      if (client_socket != SOCKET_ERROR) {
-        TcpClient *tcp_client = new TcpClient(client_socket, client_endpoint);
-        accepted_clients_mutex_.lock();
-        accepted_clients_.push_back(tcp_client);
-        accepted_clients_mutex_.unlock();
+      // Clear the socket set
+      FD_ZERO(&socket_set);
 
-        OnClientConnected(tcp_client);
-      }
+      // Add the listener to the set
+      FD_SET(listen_socket_, &socket_set);
+      max_socket = listen_socket_;
 
-      // Read from current clients
+      // Add all clients to the set
       accepted_clients_mutex_.lock();
       for (auto tcp_client : accepted_clients_) {
-        // TODO: Write!
+        if (tcp_client->is_connected_) {
+          FD_SET(tcp_client->client_socket_, &socket_set);
+
+          // If the client socket is the largest socket, set it so
+          if (tcp_client->client_socket_ > max_socket) {
+            max_socket = tcp_client->client_socket_;
+          }
+        }
       }
       accepted_clients_mutex_.unlock();
 
-      // TODO: Sleep
+      // Check if an activity was completed on any of those sockets
+      int32_t socket_activity = select(max_socket + 1, &socket_set, NULL, NULL,
+        NULL);
 
+      // Ensure select didn't fail
+      if (socket_activity == SOCKET_ERROR && errno == EINTR) {
+        continue;
+      }
+
+      // Check if a new connection is awaiting
+      if (FD_ISSET(listen_socket_, &socket_set)) {
+        sockaddr_in client_endpoint;
+        uint32_t client_endpoint_size = sizeof(client_endpoint);
+        SOCKET client_socket = accept(listen_socket_,
+          (sockaddr *)&client_endpoint, &client_endpoint_size);
+        if (client_socket != SOCKET_ERROR) {
+          TcpClient *tcp_client = new TcpClient(client_socket, client_endpoint);
+          accepted_clients_mutex_.lock();
+          accepted_clients_.push_back(tcp_client);
+          accepted_clients_mutex_.unlock();
+
+          OnClientConnected(*tcp_client);
+        }
+      }
+
+      // Check if there was some operation completed on another socket
+      accepted_clients_mutex_.lock();
+      for (auto tcp_client = accepted_clients_.begin();
+        tcp_client != accepted_clients_.end();) {
+        if (FD_ISSET((*tcp_client)->client_socket_, &socket_set)) {
+          uint32_t read_bytes = recv((*tcp_client)->client_socket_,
+            (*tcp_client)->read_buffer_.data(),
+            (*tcp_client)->read_buffer_.size(), 0);
+          if (read_bytes > 0) {
+            Buffer buffer((*tcp_client)->read_buffer_.data(), read_bytes);
+            OnDataReceived(**tcp_client, buffer);
+          } else {
+            (*tcp_client)->is_connected_ = false;
+            OnClientDisconnected(**tcp_client);
+            tcp_client = accepted_clients_.erase(tcp_client);
+            continue;
+          }
+        }
+        ++tcp_client;
+      }
+      accepted_clients_mutex_.unlock();
+
+      // Sleep
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }
 
@@ -181,6 +231,15 @@ public:
     accepted_clients_mutex_.unlock();
 
     return true;
+  }
+
+  bool Send(TcpClient &tcp_client, Buffer &buffer) {
+    if (!tcp_client.is_internal_ || !tcp_client.is_connected_) {
+      return false;
+    }
+
+    return send(tcp_client.client_socket_, buffer.GetBuffer(),
+      buffer.GetSize(), 0) != SOCKET_ERROR;
   }
 
   Event<TcpClient &> OnClientConnected;

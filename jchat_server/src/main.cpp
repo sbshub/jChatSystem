@@ -21,6 +21,11 @@ int main(int argc, char **argv) {
     std::cout << "Client connected!" << std::endl;
     return true;
   });
+  tcp_server.OnDataReceived.Add([](jchat::TcpClient &tcp_client,
+    jchat::Buffer &buffer) {
+    std::cout << "Received " << buffer.GetSize() << " bytes" << std::endl;
+    return true;
+  });
   if (tcp_server.Start()) {
     std::cout << "Started listening on 0.0.0.0:9998" << std::endl;
     while (true) {
