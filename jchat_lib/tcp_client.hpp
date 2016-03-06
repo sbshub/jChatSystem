@@ -82,12 +82,7 @@ public:
       for (addrinfo *ptr = result; ptr != NULL; ptr = ptr->ai_next) {
         if (ptr->ai_family == AF_INET) {
           sockaddr_in *endpoint_info = (sockaddr_in *)ptr->ai_addr;
-#if defined(OS_LINUX)
           client_endpoint_.sin_addr.s_addr = endpoint_info->sin_addr.s_addr;
-#elif defined(OS_WIN) // Currently untested
-          client_endpoint_.sin_addr.S_un.S_addr
-            = endpoint_info->sin_addr.S_un.S_addr;
-#endif
         }
       }
     }
