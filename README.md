@@ -4,13 +4,30 @@ jChatSystem is a TCP network based chat system, using clients and a server. It i
 
 ## Installation/Usage
 
-TODO!
+1. Download, or clone repository using `git clone https://github.com/Imposter/jChatSystem/`
+2. Use `make [all|clean|install|uninstall]` to complete the desired operation.
+  Supported commands:
+  i. `all` - Cleans and then builds the chat server and client
+  ii. `clean` - Cleans the project directories
+  iii. `install` - Installs the chat server and client to the system (TODO!)
+  iv. `uninstall` - Uninstalls the chat server and client from the system (TODO!)
+
+`NOTE: Make sure you have git, g++, and make installed on your system.`
 
 ## Contributing
 
+#### Users with access to this repository
+1. Clone the repository
+2. Adding new directories or files to be monitored by git: `git add <path>`
+3. Update commit with relevant changes `git stage .` (Updates commit with all changes)
+4. Commit your changes: `git commit -m "Your message"`
+5. Push your commit: `git push -u origin master`
+6. Enter your credentials when prompted.
+
+#### Users without access to this repository
 1. Fork it!
 2. Create your feature branch: `git checkout -b my-new-feature`
-3. Commit your changes: `git commit -am 'Added some new features'`
+3. Commit your changes: `git commit -am "Added some new features"`
 4. Push to the branch: `git push origin my-new-feature`
 5. Submit a pull request.
 

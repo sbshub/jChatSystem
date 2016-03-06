@@ -19,13 +19,16 @@ jchat_client: jchat_client/src/main.cpp
 clean:
 	rm -f build/jchat_server build/jchat_client
 
-run_server:
+test_server:
 	./build/jchat_server
 
-run_client:
+test_client:
 	./build/jchat_client
 
 install:
 	mkdir -p bin
 	cp build/jchat_server bin/jchat_server
 	cp build/jchat_client bin/jchat_client
+
+uninstall:
+	rm -rf bin
