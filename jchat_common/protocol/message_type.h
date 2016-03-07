@@ -13,8 +13,28 @@
 #include <stdint.h>
 
 namespace jchat {
-enum MessageType : uint8_t {
-  kMessageType_Hello = 1
+enum MessageType : uint16_t {
+  kMessageType_Hello,
+  kMessageType_Complete_Hello,
+  kMessageType_Quit,
+  kMessageType_Complete_Quit,
+  kMessageType_Idenfity,
+  kMessageType_Complete_Idenfity,
+  kMessageType_SendMessage,
+  kMessageType_Complete_SendMessage,
+  kMessageType_JoinChannel,
+  kMessageType_Complete_JoinChannel,
+  kMessageType_PartChannel,
+  kMessageType_Complete_PartChannel,
+  kMessageType_OpClientInChannel,
+  kMessageType_Complete_OpClientInChannel,
+  kMessageType_DeOpClientInChannel,
+  kMessageType_Complete_DeOpClientInChannel,
+  kMessageType_KickClientFromChannel,
+  kMessageType_Complete_KickClientFromChannel,
+  kMessageType_BanClientFromChannel,
+  kMessageType_Complete_BanClientFromChannel,
+  kMessageType_Max,
 };
 }
 

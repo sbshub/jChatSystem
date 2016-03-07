@@ -1,11 +1,12 @@
-all: clean jchat_server jchat_client
+all: jchat_server jchat_client
 
-jchat_server: jchat_server/src/main.cpp
+jchat_server: jchat_server/src/main.cpp jchat_server/src/core/chat_server.cpp
 	mkdir -p build
 	g++ -g -pthread -std=c++11 -o build/jchat_server \
 	-I jchat_lib/ \
 	-I jchat_common/ \
 	-I jchat_server/include/ \
+	jchat_server/src/core/chat_server.cpp \
 	jchat_server/src/main.cpp
 
 jchat_client: jchat_client/src/main.cpp

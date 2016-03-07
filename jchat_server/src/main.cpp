@@ -7,7 +7,7 @@
 */
 
 // Required libraries
-#include "tcp_server.hpp"
+#include "core/chat_server.h"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -16,41 +16,29 @@
 int main(int argc, char **argv) {
   std::cout << "jChatSystem - Server" << std::endl;
 
-  jchat::TcpServer tcp_server("0.0.0.0", 9998);
-  tcp_server.OnClientConnected.Add([](jchat::TcpClient &tcp_client) {
+  jchat::ChatServer chat_server("0.0.0.0", 9998);
+  chat_server.OnClientConnected.Add([](jchat::RemoteChatClient &client) {
     std::cout << "Client from "
-              << tcp_client.GetRemoteEndpoint().ToString()
-              << " connected!"
+              << client.Endpoint.ToString()
+              << " connected"
               << std::endl;
     return true;
   });
-  tcp_server.OnClientDisconnected.Add([](jchat::TcpClient &tcp_client) {
+  chat_server.OnClientDisconnected.Add([](jchat::RemoteChatClient &client) {
     std::cout << "Client from "
-              << tcp_client.GetRemoteEndpoint().ToString()
-              << " disconnected!"
+              << client.Endpoint.ToString()
+              << " disconnected"
               << std::endl;
     return true;
   });
-  tcp_server.OnDataReceived.Add([](jchat::TcpClient &tcp_client,
-    jchat::Buffer &buffer) {
-    std::cout << tcp_client.GetRemoteEndpoint().ToString() << ": ";
-    std::cout.write(reinterpret_cast<const char *>(buffer.GetBuffer()),
-      buffer.GetSize());
-    std::cout << " (" << buffer.GetSize() << " bytes)" << std::endl;
-    return true;
-  });
-
-  if (tcp_server.Start()) {
-    std::cout << "Started listening on "
-              << tcp_server.GetListenEndpoint().ToString()
-              << std::endl;
+  if (chat_server.Start()) {
+    std::cout << "Started listening" << std::endl;
     while (true) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   } else {
-    std::cout << "Failed to listen on "
-              << tcp_server.GetListenEndpoint().ToString()
-              << std::endl;
+    std::cout << "Failed to listen" << std::endl;
+    return -1;
   }
 
   return 0;

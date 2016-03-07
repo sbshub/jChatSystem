@@ -6,9 +6,13 @@
 *   LICENSE in the project root.
 */
 
-#ifndef jchat_server_stdinc_h_
-#define jchat_server_stdinc_h_
+#ifndef jchat_client_chat_client_h_
+#define jchat_client_chat_client_h_
 
+// Required libraries
+// TODO: Write this...
 
+namespace jchat {
+}
 
-#endif // jchat_server_stdinc_h_
+#endif // jchat_client_chat_client_h_

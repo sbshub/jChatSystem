@@ -118,6 +118,7 @@ public:
         if (ptr->ai_family == AF_INET) {
           sockaddr_in *endpoint_info = (sockaddr_in *)ptr->ai_addr;
           remote_endpoint_.SetAddress(ntohl(endpoint_info->sin_addr.s_addr));
+          break;
         }
       }
     }

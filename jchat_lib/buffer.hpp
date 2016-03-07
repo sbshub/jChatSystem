@@ -146,6 +146,14 @@ public:
     }
   }
 
+  template<typename _TData>
+  void WriteArray(const _TData *obj, size_t size) {
+    // Write each object in the array
+    for (size_t i = 0; i < size; i++) {
+      Write(obj[i]);
+    }
+  }
+
   size_t GetPosition() {
     return current_position_;
   }
@@ -158,6 +166,14 @@ public:
     }
     current_position_ = current_position;
     return true;
+  }
+
+  bool IsFlippingEndian() {
+    return flip_endian_;
+  }
+
+  void SetFlipEndian(bool flip_endian) {
+    flip_endian_ = flip_endian;
   }
 
   void Rewind() {

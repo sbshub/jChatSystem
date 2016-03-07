@@ -100,10 +100,16 @@ class TcpServer {
           uint32_t read_bytes = recv((*tcp_client)->client_socket_,
             (*tcp_client)->read_buffer_.data(),
             (*tcp_client)->read_buffer_.size(), 0);
+          bool disconnect_client = false;
           if (read_bytes > 0) {
             Buffer buffer((*tcp_client)->read_buffer_.data(), read_bytes);
-            OnDataReceived(**tcp_client, buffer);
+            if (!OnDataReceived(**tcp_client, buffer)) {
+              disconnect_client = true;
+            }
           } else {
+            disconnect_client = true;
+          }
+          if (disconnect_client) {
             (*tcp_client)->is_connected_ = false;
             closesocket((*tcp_client)->client_socket_);
             OnClientDisconnected(**tcp_client);
@@ -141,6 +147,7 @@ public:
         if (ptr->ai_family == AF_INET) {
           sockaddr_in *endpoint_info = (sockaddr_in *)ptr->ai_addr;
           listen_endpoint_.SetAddress(ntohl(endpoint_info->sin_addr.s_addr));
+          break;
         }
       }
     }
@@ -150,12 +157,17 @@ public:
 
   ~TcpServer() {
     if (is_listening_) {
+      is_listening_ = false;
+      worker_thread_.join();
       closesocket(listen_socket_);
     }
-    for (auto tcp_client : accepted_clients_) {
-      delete tcp_client;
+
+    if (!accepted_clients_.empty()) {
+      for (auto tcp_client : accepted_clients_) {
+        delete tcp_client;
+      }
+      accepted_clients_.clear();
     }
-    accepted_clients_.clear();
   }
 
   bool Start() {
@@ -209,13 +221,34 @@ public:
     closesocket(listen_socket_);
 
     accepted_clients_mutex_.lock();
-    for (auto tcp_client : accepted_clients_) {
-      delete tcp_client;
+    if (!accepted_clients_.empty()) {
+      for (auto tcp_client : accepted_clients_) {
+        delete tcp_client;
+      }
+      accepted_clients_.clear();
     }
-    accepted_clients_.clear();
     accepted_clients_mutex_.unlock();
 
     return true;
+  }
+
+  bool DisconnectClient(TcpClient &tcp_client) {
+    accepted_clients_mutex_.lock();
+    for (auto client = accepted_clients_.begin();
+      client != accepted_clients_.end();) {
+      if (*client == &tcp_client) {
+        (*client)->is_connected_ = false;
+        closesocket((*client)->client_socket_);
+        OnClientDisconnected(**client);
+        accepted_clients_.erase(client);
+        accepted_clients_mutex_.unlock();
+        return true;
+      } else {
+        ++client;
+      }
+    }
+    accepted_clients_mutex_.unlock();
+    return false;
   }
 
   bool Send(TcpClient &tcp_client, Buffer &buffer) {

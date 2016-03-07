@@ -22,6 +22,13 @@ int main(int argc, char **argv) {
     exit(0);
     return true;
   });
+  tcp_client.OnDataReceived.Add([](jchat::Buffer &buffer) {
+    std::cout << "<< ";
+    std::cout.write(reinterpret_cast<const char *>(buffer.GetBuffer()),
+      buffer.GetSize());
+    std::cout << std::endl;
+    return true;
+  });
   if (tcp_client.Connect()) {
     std::cout << "Connected to "
               << tcp_client.GetRemoteEndpoint().ToString()
