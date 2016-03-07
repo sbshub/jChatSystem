@@ -56,6 +56,10 @@ class ChatServer {
   bool sendMulticast(std::vector<RemoteChatClient *> clients,
     MessageType message_type, TypedBuffer &buffer);
 
+  // Message functions
+  bool sendMessageToClient(RemoteChatClient *source, RemoteChatClient *target,
+    std::string message);
+
   // Channel functions
   // TODO: Create channel, Destroy channel, etc, etc...
   bool addChannelOperator(ChatChannel *channel, RemoteChatClient *client);
@@ -72,10 +76,6 @@ public:
 
   bool AddHandler(ChatHandler *handler);
   bool RemoveHandler(ChatHandler *handler);
-
-  // Message functions
-  bool SendMessageToClient(RemoteChatClient *source, RemoteChatClient *target,
-    std::string message);
 
   Event<RemoteChatClient &> OnClientConnected;
   Event<RemoteChatClient &> OnClientDisconnected;

@@ -125,16 +125,6 @@ bool ChatServer::RemoveHandler(ChatHandler *handler) {
   return false;
 }
 
-bool ChatServer::SendMessageToClient(RemoteChatClient *source,
-  RemoteChatClient *target, std::string message) {
-  TypedBuffer buffer = createBuffer();
-  buffer.WriteUInt16(kMessageResult_Succeeded); // Result
-  buffer.WriteString(source->Username); // Source username
-  buffer.WriteString(source->Hostname); // Source hostname
-  buffer.WriteString(message); // Actual message
-  return sendUnicast(target, kMessageType_Complete_SendMessage, buffer);
-}
-
 bool ChatServer::onClientConnected(TcpClient &tcp_client) {
   RemoteChatClient *chat_client = new RemoteChatClient();
 
@@ -294,6 +284,16 @@ bool ChatServer::sendMulticast(std::vector<RemoteChatClient *> clients,
     }
   }
   return success;
+}
+
+bool ChatServer::sendMessageToClient(RemoteChatClient *source,
+  RemoteChatClient *target, std::string message) {
+  TypedBuffer buffer = createBuffer();
+  buffer.WriteUInt16(kMessageResult_Succeeded); // Result
+  buffer.WriteString(source->Username); // Source username
+  buffer.WriteString(source->Hostname); // Source hostname
+  buffer.WriteString(message); // Actual message
+  return sendUnicast(target, kMessageType_Complete_SendMessage, buffer);
 }
 
 bool addChannelOperator(ChatChannel *channel, RemoteChatClient *client) {
