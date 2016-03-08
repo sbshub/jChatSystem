@@ -15,8 +15,9 @@
 #include "chat_handler.h"
 #include "chat_channel.h"
 #include "protocol/version.h"
-#include "protocol/message_type.h"
+#include "protocol/component_type.h"
 #include "protocol/message_result.h"
+#include "protocol/user/user_message_type.h"
 
 namespace jchat {
 class ChatClient {
@@ -30,6 +31,7 @@ class ChatClient {
   // NOTE: These are the channels that the client is in...
   std::vector<ChatChannel *> channels_;
   std::mutex channels_mutex_;
+  RemoteChatClient chat_client_;
 
   // Internal events
   bool onConnected();
@@ -40,10 +42,18 @@ class ChatClient {
   TypedBuffer createBuffer();
 
   // Send functions
-  bool send(MessageType message_type, TypedBuffer &buffer);
+  bool send(ComponentType component_type, uint8_t message_type,
+    TypedBuffer &buffer);
+
+  // User functions
+  bool userIdentify(std::string &username);
 
   // Message functions
-  bool sendMessageToClient(RemoteChatClient *target, std::string message);
+  bool messageSendToUser(RemoteChatClient *target, std::string message);
+  bool messageSendToUser(std::string &target, std::string message);
+
+  // Channel functions
+
 
 public:
   ChatClient(const char *hostname, uint16_t port);
@@ -55,9 +65,19 @@ public:
   bool AddHandler(ChatHandler *handler);
   bool RemoveHandler(ChatHandler *handler);
 
+  IPEndpoint GetLocalEndpoint();
+  IPEndpoint GetRemoteEndpoint();
+
+  // Alias functions
+  // User functions
+  bool UserIdentify(std::string &username);
+
+  // Message functions
+  bool MessageSendToUser(std::string target, std::string message);
 
   Event<> OnConnected;
   Event<> OnDisconnected;
+  Event<MessageResult &> OnIdenfityCompleted;
 };
 }
 

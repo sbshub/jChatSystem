@@ -1,3 +1,6 @@
+.PHONY: all jchat_server jchat_client clean test_server test_client install \
+	uninstall
+
 all: jchat_server jchat_client
 
 jchat_server: jchat_server/src/main.cpp jchat_server/src/core/chat_server.cpp
@@ -15,6 +18,7 @@ jchat_client: jchat_client/src/main.cpp
 	-I jchat_lib/ \
 	-I jchat_common/ \
 	-I jchat_client/include/ \
+	jchat_client/src/core/chat_client.cpp \
 	jchat_client/src/main.cpp
 
 clean:

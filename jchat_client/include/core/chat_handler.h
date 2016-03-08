@@ -9,6 +9,7 @@
 #ifndef jchat_client_chat_handler_h_
 #define jchat_client_chat_handler_h_
 
+#include "protocol/component_type.h"
 #include "remote_chat_client.h"
 #include "typed_buffer.hpp"
 
@@ -16,8 +17,18 @@ namespace jchat {
 class ChatClient;
 class ChatHandler {
 public:
-  virtual uint8_t GetType() = 0;
-  virtual bool Handle(ChatClient &client, TypedBuffer &buffer) = 0;
+  // Internal functions
+  virtual bool Initialize(ChatClient &client) = 0;
+  virtual bool Shutdown(ChatClient &client) = 0;
+
+  // Internal events
+  virtual void OnConnected(ChatClient &client) = 0;
+  virtual void OnDisconnected(ChatClient &client) = 0;
+
+  // Handler functions
+  virtual ComponentType GetType() = 0;
+  virtual bool Handle(ChatClient &client, uint8_t message_type,
+    TypedBuffer &buffer) = 0;
 };
 }
 

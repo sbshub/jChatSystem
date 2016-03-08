@@ -32,12 +32,16 @@ int main(int argc, char **argv) {
     return true;
   });
   if (chat_server.Start()) {
-    std::cout << "Started listening" << std::endl;
+    std::cout << "Started listening on "
+              << chat_server.GetListenEndpoint().ToString()
+              << std::endl;
     while (true) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   } else {
-    std::cout << "Failed to listen" << std::endl;
+    std::cout << "Failed to listen on "
+              << chat_server.GetListenEndpoint().ToString()
+              << std::endl;
     return -1;
   }
 

@@ -7,7 +7,8 @@
 */
 
 // Required libraries
-#include "tcp_client.hpp"
+#include "core/chat_client.h"
+#include "string.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -16,38 +17,67 @@
 int main(int argc, char **argv) {
   std::cout << "jChatSystem - Client" << std::endl;
 
-  jchat::TcpClient tcp_client("127.0.0.1", 9998);
-  tcp_client.OnDisconnected.Add([]() {
+  jchat::ChatClient chat_client("127.0.0.1", 9998);
+  chat_client.OnDisconnected.Add([]() {
     std::cout << "Disconnected from server" << std::endl;
     exit(0);
     return true;
   });
-  tcp_client.OnDataReceived.Add([](jchat::Buffer &buffer) {
-    std::cout << "<< ";
-    std::cout.write(reinterpret_cast<const char *>(buffer.GetBuffer()),
-      buffer.GetSize());
-    std::cout << std::endl;
-    return true;
-  });
-  if (tcp_client.Connect()) {
+  if (chat_client.Connect()) {
     std::cout << "Connected to "
-              << tcp_client.GetRemoteEndpoint().ToString()
+              << chat_client.GetRemoteEndpoint().ToString()
               << std::endl;
     while (true) {
-      std::string message;
-      std::getline(std::cin, message);
+      std::string input;
+      std::getline(std::cin, input);
 
-      jchat::Buffer buffer;
-      buffer.WriteArray<char>(const_cast<char *>(message.c_str()), message.size());
-      buffer.Write<char>(0);
+      // Check if the input is valid
+      if (input.empty()) {
+        continue;
+      }
 
-      tcp_client.Send(buffer);
+      if (input[0] != '/') {
+        std::cout << "Invalid command" << std::endl;
+        continue;
+      }
 
-      std::cout << ">> " << message << std::endl;
+      // Split the input
+      std::vector<std::string> input_split
+        = jchat::String::Split(input.substr(1), " ");
+
+      // Read the command
+      if (input_split.size() == 0) {
+        std::cout << "Invalid command" << std::endl;
+        continue;
+      }
+
+      std::string &command = input_split[0];
+      std::vector<std::string> arguments(input_split.begin() + 1,
+        input_split.end());
+
+      if (command == "identify" && arguments.size() == 1) {
+        std::string &username = arguments[0];
+        // TODO: Implement Events!!!
+        chat_client.UserIdentify(username);
+      } else if (command == "join" && arguments.size() == 1) {
+        std::string &target = arguments[0];
+        // TODO: Implement
+      } else if (command == "msg" && arguments.size() >= 2) {
+        std::string &target = arguments[0];
+        std::string message = jchat::String::Join(
+          std::vector<std::string>(arguments.begin() + 1, arguments.end()),
+          " ");
+        chat_client.MessageSendToUser(target, message);
+      } else {
+        std::cout << "Invalid command" << std::endl;
+        continue;
+      }
+
+      std::cout << ">> " << input << std::endl;
     }
   } else {
     std::cout << "Failed to connect to "
-              << tcp_client.GetRemoteEndpoint().ToString()
+              << chat_client.GetRemoteEndpoint().ToString()
               << std::endl;
   }
 

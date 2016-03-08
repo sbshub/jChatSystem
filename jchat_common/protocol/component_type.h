@@ -6,17 +6,19 @@
 *   LICENSE in the project root.
 */
 
-#ifndef jchat_common_message_result_h_
-#define jchat_common_message_result_h_
+#ifndef jchat_common_component_type_h_
+#define jchat_common_component_type_h_
 
 // Required libraries
 #include <stdint.h>
 
 namespace jchat {
-enum MessageResult : uint16_t {
-  kMessageResult_Succeeded,
-  kMessageResult_Failed,
+enum ComponentType : uint8_t {
+  kComponentType_System,
+  kComponentType_User,
+  kComponentType_Channel,
+  kComponentType_Max,
 };
 }
 
-#endif // jchat_common_message_result_h_
+#endif // jchat_common_component_type_h_

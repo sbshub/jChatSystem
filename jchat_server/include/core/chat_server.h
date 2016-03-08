@@ -15,8 +15,9 @@
 #include "chat_handler.h"
 #include "chat_channel.h"
 #include "protocol/version.h"
-#include "protocol/message_type.h"
+#include "protocol/component_type.h"
 #include "protocol/message_result.h"
+#include "protocol/user/user_message_type.h"
 #include <map>
 
 namespace jchat {
@@ -43,18 +44,18 @@ class ChatServer {
   bool getTcpClient(RemoteChatClient &client, TcpClient *out_client);
 
   // Send functions
-  bool sendUnicast(TcpClient &client, MessageType message_type,
-    TypedBuffer &buffer);
-  bool sendUnicast(TcpClient *client, MessageType message_type,
-      TypedBuffer &buffer);
-  bool sendMulticast(std::vector<TcpClient *> clients, MessageType message_type,
-    TypedBuffer &buffer);
-  bool sendUnicast(RemoteChatClient &client, MessageType message_type,
-    TypedBuffer &buffer);
-  bool sendUnicast(RemoteChatClient *client, MessageType message_type,
-    TypedBuffer &buffer);
+  bool sendUnicast(TcpClient &client, ComponentType component_type,
+    uint8_t message_type, TypedBuffer &buffer);
+  bool sendUnicast(TcpClient *client, ComponentType component_type,
+    uint8_t message_type, TypedBuffer &buffer);
+  bool sendMulticast(std::vector<TcpClient *> clients,
+    ComponentType component_type, uint8_t message_type, TypedBuffer &buffer);
+  bool sendUnicast(RemoteChatClient &client, ComponentType component_type,
+    uint8_t message_type, TypedBuffer &buffer);
+  bool sendUnicast(RemoteChatClient *client, ComponentType component_type,
+    uint8_t message_type, TypedBuffer &buffer);
   bool sendMulticast(std::vector<RemoteChatClient *> clients,
-    MessageType message_type, TypedBuffer &buffer);
+    ComponentType component_type, uint8_t message_type, TypedBuffer &buffer);
 
   // Message functions
   bool sendMessageToClient(RemoteChatClient *source, RemoteChatClient *target,
@@ -77,8 +78,11 @@ public:
   bool AddHandler(ChatHandler *handler);
   bool RemoveHandler(ChatHandler *handler);
 
+  IPEndpoint GetListenEndpoint();
+
   Event<RemoteChatClient &> OnClientConnected;
   Event<RemoteChatClient &> OnClientDisconnected;
+  Event<RemoteChatClient &, MessageResult &> OnClientIdentified;
 };
 }
 
