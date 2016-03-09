@@ -6,8 +6,8 @@
 *   LICENSE in the project root.
 */
 
-#ifndef jchat_server_chat_handler_h_
-#define jchat_server_chat_handler_h_
+#ifndef jchat_server_chat_component_h_
+#define jchat_server_chat_component_h_
 
 #include "protocol/component_type.h"
 #include "remote_chat_client.h"
@@ -15,7 +15,7 @@
 
 namespace jchat {
 class ChatServer;
-class ChatHandler {
+class ChatComponent {
 public:
   virtual bool Initialize(ChatServer &server) = 0;
   virtual bool Shutdown(ChatServer &server) = 0;
@@ -26,4 +26,4 @@ public:
 };
 }
 
-#endif // jchat_server_chat_handler_h_
+#endif // jchat_server_chat_component_h_

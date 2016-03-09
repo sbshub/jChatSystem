@@ -12,7 +12,7 @@
 // Required libraries
 #include "tcp_client.hpp"
 #include "remote_chat_client.h"
-#include "chat_handler.h"
+#include "chat_component.h"
 #include "chat_channel.h"
 #include "protocol/version.h"
 #include "protocol/component_type.h"
@@ -21,13 +21,13 @@
 
 namespace jchat {
 class ChatClient {
-  friend class ChatHandler;
+  friend class ChatComponent;
 
   bool is_connected_;
   TcpClient tcp_client_;
   bool is_little_endian_;
-  std::vector<ChatHandler *> handlers_;
-  std::mutex handlers_mutex_;
+  std::vector<ChatComponent *> components_;
+  std::mutex components_mutex_;
   // NOTE: These are the channels that the client is in...
   std::vector<ChatChannel *> channels_;
   std::mutex channels_mutex_;
@@ -45,16 +45,6 @@ class ChatClient {
   bool send(ComponentType component_type, uint8_t message_type,
     TypedBuffer &buffer);
 
-  // User functions
-  bool userIdentify(std::string &username);
-
-  // Message functions
-  bool messageSendToUser(RemoteChatClient *target, std::string message);
-  bool messageSendToUser(std::string &target, std::string message);
-
-  // Channel functions
-
-
 public:
   ChatClient(const char *hostname, uint16_t port);
   ~ChatClient();
@@ -62,22 +52,20 @@ public:
   bool Connect();
   bool Disconnect();
 
-  bool AddHandler(ChatHandler *handler);
-  bool RemoveHandler(ChatHandler *handler);
+  bool AddHandler(ChatComponent *component);
+  bool RemoveHandler(ChatComponent *component);
+
+  ChatComponent *GetComponent(ComponentType component_type);
+  template<typname _TComponent>
+  _TComponent *GetComponent(ComponentType component_type) {
+    return reinterpret_cast<_TComponent *>(GetComponent(component_type));
+  }
 
   IPEndpoint GetLocalEndpoint();
   IPEndpoint GetRemoteEndpoint();
 
-  // Alias functions
-  // User functions
-  bool UserIdentify(std::string &username);
-
-  // Message functions
-  bool MessageSendToUser(std::string target, std::string message);
-
   Event<> OnConnected;
   Event<> OnDisconnected;
-  Event<MessageResult &> OnIdenfityCompleted;
 };
 }
 

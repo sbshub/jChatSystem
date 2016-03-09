@@ -6,8 +6,8 @@
 *   LICENSE in the project root.
 */
 
-#ifndef jchat_client_chat_handler_h_
-#define jchat_client_chat_handler_h_
+#ifndef jchat_client_chat_component_h_
+#define jchat_client_chat_component_h_
 
 #include "protocol/component_type.h"
 #include "remote_chat_client.h"
@@ -15,7 +15,7 @@
 
 namespace jchat {
 class ChatClient;
-class ChatHandler {
+class ChatComponent {
 public:
   // Internal functions
   virtual bool Initialize(ChatClient &client) = 0;

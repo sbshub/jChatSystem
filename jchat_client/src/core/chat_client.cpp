@@ -34,12 +34,12 @@ ChatClient::~ChatClient() {
     channels_.clear();
   }
 
-  // Remove handlers
-  if (!handlers_.empty()) {
-    for (auto handler : handlers_) {
-      delete handler;
+  // Remove components
+  if (!components_.empty()) {
+    for (auto component : components_) {
+      delete component;
     }
-    handlers_.clear();
+    components_.clear();
   }
 }
 
@@ -81,39 +81,51 @@ bool ChatClient::Disconnect() {
   return true;
 }
 
-bool ChatClient::AddHandler(ChatHandler *handler) {
-  handlers_mutex_.lock();
-  for (auto it = handlers_.begin(); it != handlers_.end();) {
-    if (*it == handler) {
-      handlers_mutex_.unlock();
+bool ChatClient::AddHandler(ChatComponent *component) {
+  components_mutex_.lock();
+  for (auto it = components_.begin(); it != components_.end();) {
+    if (*it == component) {
+      components_mutex_.unlock();
       return false;
     }
   }
-  if (!handler->Initialize(*this)) {
-    handlers_mutex_.unlock();
+  if (!component->Initialize(*this)) {
+    components_mutex_.unlock();
     return false;
   }
-  handlers_.push_back(handler);
-  handlers_mutex_.unlock();
+  components_.push_back(component);
+  components_mutex_.unlock();
 
   return true;
 }
 
-bool ChatClient::RemoveHandler(ChatHandler *handler) {
-  handlers_mutex_.lock();
-  for (auto it = handlers_.begin(); it != handlers_.end();) {
-    if (*it == handler) {
-      if (!handler->Shutdown(*this)) {
+bool ChatClient::RemoveHandler(ChatComponent *component) {
+  components_mutex_.lock();
+  for (auto it = components_.begin(); it != components_.end();) {
+    if (*it == component) {
+      if (!component->Shutdown(*this)) {
         return false;
       }
-      handlers_.erase(it);
-      handlers_mutex_.unlock();
+      components_.erase(it);
+      components_mutex_.unlock();
       return true;
     }
   }
-  handlers_mutex_.unlock();
+  components_mutex_.unlock();
 
   return false;
+}
+
+ChatComponent *ChatClient::GetComponent(ComponentType component_type) {
+  components_mutex_.lock();
+  for (auto component : components_) {
+    if (component->GetType() == component_type) {
+      components_mutex_.unlock();
+      return component;
+    }
+  }
+  components_mutex_.unlock();
+  return 0;
 }
 
 IPEndpoint ChatClient::GetLocalEndpoint() {
@@ -124,30 +136,22 @@ IPEndpoint ChatClient::GetRemoteEndpoint() {
   return tcp_client_.GetRemoteEndpoint();
 }
 
-bool ChatClient::UserIdentify(std::string &username) {
-  return userIdentify(username);
-}
-
-bool ChatClient::MessageSendToUser(std::string target, std::string message) {
-  return messageSendToUser(target, message);
-}
-
 bool ChatClient::onConnected() {
-  handlers_mutex_.lock();
-  for (auto handler : handlers_) {
-    handler->OnConnected(*this);
+  components_mutex_.lock();
+  for (auto component : components_) {
+    component->OnConnected(*this);
   }
-  handlers_mutex_.unlock();
+  components_mutex_.unlock();
 
   return OnConnected();
 }
 
 bool ChatClient::onDisconnected() {
-  handlers_mutex_.lock();
-  for (auto handler : handlers_) {
-    handler->OnDisconnected(*this);
+  components_mutex_.lock();
+  for (auto component : components_) {
+    component->OnDisconnected(*this);
   }
-  handlers_mutex_.unlock();
+  components_mutex_.unlock();
 
   return OnDisconnected();
 }
@@ -174,15 +178,15 @@ bool ChatClient::onDataReceived(Buffer &buffer) {
 
   // Try to handle the request, if it is unhandled, drop the connection
   bool handled = false;
-  handlers_mutex_.lock();
-  for (auto handler : handlers_) {
-    if (handler->GetType() == static_cast<ComponentType>(component_type)) {
-      if (handler->Handle(*this, message_type, typed_buffer)) {
+  components_mutex_.lock();
+  for (auto component : components_) {
+    if (component->GetType() == static_cast<ComponentType>(component_type)) {
+      if (component->Handle(*this, message_type, typed_buffer)) {
         handled = true;
       }
     }
   }
-  handlers_mutex_.unlock();
+  components_mutex_.unlock();
 
   return handled;
 }
@@ -204,29 +208,5 @@ bool ChatClient::send(ComponentType component_type, uint8_t message_type,
   temp_buffer.WriteArray<uint8_t>(buffer.GetBuffer(), buffer.GetSize());
 
   return tcp_client_.Send(temp_buffer);
-}
-
-bool ChatClient::userIdentify(std::string &username) {
-  TypedBuffer buffer = createBuffer();
-  buffer.WriteUInt16(kMessageResult_Succeeded); // Result
-  buffer.WriteString(username); // Target username
-  return send(kComponentType_User, kUserMessageType_Identify, buffer);
-}
-
-bool ChatClient::messageSendToUser(RemoteChatClient *target,
-  std::string message) {
-  TypedBuffer buffer = createBuffer();
-  buffer.WriteUInt16(kMessageResult_Succeeded); // Result
-  buffer.WriteString(target->Username); // Target username
-  buffer.WriteString(message); // Actual message
-  return send(kComponentType_User, kUserMessageType_SendMessage, buffer);
-}
-
-bool ChatClient::messageSendToUser(std::string &target, std::string message) {
-  TypedBuffer buffer = createBuffer();
-  buffer.WriteUInt16(kMessageResult_Succeeded); // Result
-  buffer.WriteString(target); // Target username
-  buffer.WriteString(message); // Actual message
-  return send(kComponentType_User, kUserMessageType_SendMessage, buffer);
 }
 }

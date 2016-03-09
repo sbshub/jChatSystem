@@ -12,7 +12,7 @@
 // Required libraries
 #include "tcp_server.hpp"
 #include "remote_chat_client.h"
-#include "chat_handler.h"
+#include "chat_component.h"
 #include "chat_channel.h"
 #include "protocol/version.h"
 #include "protocol/component_type.h"
@@ -22,13 +22,13 @@
 
 namespace jchat {
 class ChatServer {
-  friend class ChatHandler;
+  friend class ChatComponent;
 
   bool is_listening_;
   TcpServer tcp_server_;
   bool is_little_endian_;
-  std::vector<ChatHandler *> handlers_;
-  std::mutex handlers_mutex_;
+  std::vector<ChatComponent *> components_;
+  std::mutex components_mutex_;
   std::vector<ChatChannel *> channels_;
   std::mutex channels_mutex_;
   std::map<TcpClient *, RemoteChatClient *> clients_;
@@ -57,17 +57,6 @@ class ChatServer {
   bool sendMulticast(std::vector<RemoteChatClient *> clients,
     ComponentType component_type, uint8_t message_type, TypedBuffer &buffer);
 
-  // Message functions
-  bool sendMessageToClient(RemoteChatClient *source, RemoteChatClient *target,
-    std::string message);
-
-  // Channel functions
-  // TODO: Create channel, Destroy channel, etc, etc...
-  bool addChannelOperator(ChatChannel *channel, RemoteChatClient *client);
-  bool addChannelClient(ChatChannel *channel, RemoteChatClient *client);
-  bool removeChannelOperator(ChatChannel *channel, RemoteChatClient *client);
-  bool removeChannelClient(ChatChannel *channel, RemoteChatClient *client);
-
 public:
   ChatServer(const char *hostname, uint16_t port);
   ~ChatServer();
@@ -75,14 +64,19 @@ public:
   bool Start();
   bool Stop();
 
-  bool AddHandler(ChatHandler *handler);
-  bool RemoveHandler(ChatHandler *handler);
+  bool AddComponent(ChatComponent *component);
+  bool RemoveComponent(ChatComponent *component);
+
+  ChatComponent *GetComponent(ComponentType component_type);
+  template<typname _TComponent>
+  _TComponent *GetComponent(ComponentType component_type) {
+    return reinterpret_cast<_TComponent *>(GetComponent(component_type));
+  }
 
   IPEndpoint GetListenEndpoint();
 
   Event<RemoteChatClient &> OnClientConnected;
   Event<RemoteChatClient &> OnClientDisconnected;
-  Event<RemoteChatClient &, MessageResult &> OnClientIdentified;
 };
 }
 

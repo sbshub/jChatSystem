@@ -43,12 +43,12 @@ ChatServer::~ChatServer() {
     channels_.clear();
   }
 
-  // Remove handlers
-  if (!handlers_.empty()) {
-    for (auto handler : handlers_) {
-      delete handler;
+  // Remove components
+  if (!components_.empty()) {
+    for (auto component : components_) {
+      delete component;
     }
-    handlers_.clear();
+    components_.clear();
   }
 }
 
@@ -101,32 +101,44 @@ bool ChatServer::Stop() {
   return true;
 }
 
-bool ChatServer::AddHandler(ChatHandler *handler) {
-  handlers_mutex_.lock();
-  for (auto it = handlers_.begin(); it != handlers_.end();) {
-    if (*it == handler) {
-      handlers_mutex_.unlock();
+bool ChatServer::AddComponent(ChatComponent *component) {
+  components_mutex_.lock();
+  for (auto it = components_.begin(); it != components_.end();) {
+    if (*it == component) {
+      components_mutex_.unlock();
       return false;
     }
   }
-  handlers_.push_back(handler);
-  handlers_mutex_.unlock();
+  components_.push_back(component);
+  components_mutex_.unlock();
 
   return true;
 }
 
-bool ChatServer::RemoveHandler(ChatHandler *handler) {
-  handlers_mutex_.lock();
-  for (auto it = handlers_.begin(); it != handlers_.end();) {
-    if (*it == handler) {
-      handlers_.erase(it);
-      handlers_mutex_.unlock();
+bool ChatServer::RemoveComponent(ChatComponent *component) {
+  components_mutex_.lock();
+  for (auto it = components_.begin(); it != components_.end();) {
+    if (*it == component) {
+      components_.erase(it);
+      components_mutex_.unlock();
       return true;
     }
   }
-  handlers_mutex_.unlock();
+  components_mutex_.unlock();
 
   return false;
+}
+
+ChatComponent *ChatServer::GetComponent(ComponentType component_type) {
+  components_mutex_.lock();
+  for (auto component : components_) {
+    if (component->GetType() == component_type) {
+      components_mutex_.unlock();
+      return component;
+    }
+  }
+  components_mutex_.unlock();
+  return 0;
 }
 
 IPEndpoint ChatServer::GetListenEndpoint() {
@@ -202,15 +214,15 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
 
   // Try to handle the request, if it is unhandled, drop the connection
   bool handled = false;
-  handlers_mutex_.lock();
-  for (auto handler : handlers_) {
-    if (handler->GetType() == message_type) {
-      if (handler->Handle(*this, *chat_client, message_type, typed_buffer)) {
+  components_mutex_.lock();
+  for (auto component : components_) {
+    if (component->GetType() == message_type) {
+      if (component->Handle(*this, *chat_client, message_type, typed_buffer)) {
         handled = true;
       }
     }
   }
-  handlers_mutex_.unlock();
+  components_mutex_.unlock();
 
   return handled;
 }
@@ -237,6 +249,7 @@ bool ChatServer::sendUnicast(TcpClient &client, ComponentType component_type,
   Buffer temp_buffer(!is_little_endian_);
 
   // Write header
+  temp_buffer.Write<uint8_t>(component_type);
   temp_buffer.Write<uint16_t>(message_type);
   temp_buffer.Write<uint32_t>(buffer.GetSize());
 
@@ -293,87 +306,5 @@ bool ChatServer::sendMulticast(std::vector<RemoteChatClient *> clients,
     }
   }
   return success;
-}
-
-bool ChatServer::sendMessageToClient(RemoteChatClient *source,
-  RemoteChatClient *target, std::string message) {
-  TypedBuffer buffer = createBuffer();
-  buffer.WriteUInt16(kMessageResult_Succeeded); // Result
-  buffer.WriteString(source->Username); // Source username
-  buffer.WriteString(source->Hostname); // Source hostname
-  buffer.WriteString(message); // Actual message
-  return sendUnicast(target, kComponentType_User,
-    kUserMessageType_Complete_SendMessage, buffer);
-}
-
-bool addChannelOperator(ChatChannel *channel, RemoteChatClient *client) {
-  channel->OperatorsMutex.lock();
-  for (auto it = channel->Operators.begin(); it != channel->Operators.end();) {
-    if (*it == client) {
-      channel->OperatorsMutex.unlock();
-      return false;
-    }
-  }
-
-  channel->Operators.push_back(client);
-  channel->OperatorsMutex.unlock();
-
-  // TODO: Broadcast/Multicast (Do this in the handlers, not here)
-
-  return true;
-}
-
-bool addChannelClient(ChatChannel *channel, RemoteChatClient *client) {
-  channel->ClientsMutex.lock();
-  for (auto it = channel->Clients.begin(); it != channel->Clients.end();) {
-    if (*it == client) {
-      channel->ClientsMutex.unlock();
-      return false;
-    }
-  }
-
-  channel->Clients.push_back(client);
-  channel->ClientsMutex.unlock();
-
-  client->ChannelsMutex.lock();
-  client->Channels.push_back(channel->Name);
-  client->ChannelsMutex.unlock();
-
-  // TODO: Broadcast/Multicast
-
-  return true;
-}
-
-bool ChatServer::removeChannelOperator(ChatChannel *channel,
-  RemoteChatClient *client) {
-  for (auto it = channel->Operators.begin(); it != channel->Operators.end();) {
-    if (*it == client) {
-      // TODO: Broadcast/Multicast
-      it = channel->Operators.erase(it);
-      return true;
-    }
-  }
-  return false;
-}
-
-bool ChatServer::removeChannelClient(ChatChannel *channel,
-  RemoteChatClient *client) {
-  for (auto it = channel->Clients.begin(); it != channel->Clients.end();) {
-    if (*it == client) {
-      client->ChannelsMutex.lock();
-      for (auto itc = client->Channels.begin();
-        itc != client->Channels.end();) {
-        if (*itc == channel->Name) {
-          client->Channels.erase(itc);
-          break;
-        }
-      }
-      client->ChannelsMutex.unlock();
-      // TODO: Broadcast/Multicast
-      it = channel->Clients.erase(it);
-      return true;
-    }
-  }
-  return false;
 }
 }
