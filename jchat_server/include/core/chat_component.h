@@ -17,9 +17,15 @@ namespace jchat {
 class ChatServer;
 class ChatComponent {
 public:
+  // Internal functions
   virtual bool Initialize(ChatServer &server) = 0;
   virtual bool Shutdown(ChatServer &server) = 0;
 
+  // Internal events
+  virtual void OnClientConnected(RemoteChatClient &client) = 0;
+  virtual void OnClientDisconnected(RemoteChatClient &client) = 0;
+
+  // Handler functions
   virtual ComponentType GetType() = 0;
   virtual bool Handle(ChatServer &server, RemoteChatClient &client,
     uint8_t message_type, TypedBuffer &buffer) = 0;

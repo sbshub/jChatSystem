@@ -171,20 +171,17 @@ bool ChatServer::onClientConnected(TcpClient &tcp_client) {
 bool ChatServer::onClientDisconnected(TcpClient &tcp_client) {
   RemoteChatClient *chat_client = clients_[&tcp_client];
 
-  // Remove client from channels
-  channels_mutex_.lock();
-  for (auto channel : channels_) {
-    removeChannelOperator(channel, chat_client);
-    removeChannelClient(channel, chat_client);
-  }
-  channels_mutex_.unlock();
+  // TODO/NOTE: We need to remove the client from any channels where they're in
+  // or where they have operator or any privileges, and we can do this in the
+  // appropriate components using the OnClientDisconnected, etc. events within
+  // them
+  OnClientDisconnected(*chat_client);
 
   // Remove client
   clients_mutex_.lock();
   clients_.erase(&tcp_client);
   clients_mutex_.unlock();
 
-  OnClientDisconnected(*chat_client);
   delete chat_client;
 
   return true;

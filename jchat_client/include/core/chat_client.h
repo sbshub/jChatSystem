@@ -56,7 +56,7 @@ public:
   bool RemoveHandler(ChatComponent *component);
 
   ChatComponent *GetComponent(ComponentType component_type);
-  template<typname _TComponent>
+  template<typename _TComponent>
   _TComponent *GetComponent(ComponentType component_type) {
     return reinterpret_cast<_TComponent *>(GetComponent(component_type));
   }

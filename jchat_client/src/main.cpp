@@ -57,8 +57,7 @@ int main(int argc, char **argv) {
 
       if (command == "identify" && arguments.size() == 1) {
         std::string &username = arguments[0];
-        // TODO: Implement Events!!!
-        chat_client.UserIdentify(username);
+        // TODO: Implement
       } else if (command == "join" && arguments.size() == 1) {
         std::string &target = arguments[0];
         // TODO: Implement
@@ -67,7 +66,7 @@ int main(int argc, char **argv) {
         std::string message = jchat::String::Join(
           std::vector<std::string>(arguments.begin() + 1, arguments.end()),
           " ");
-        chat_client.MessageSendToUser(target, message);
+        // TODO: Implement
       } else {
         std::cout << "Invalid command" << std::endl;
         continue;
