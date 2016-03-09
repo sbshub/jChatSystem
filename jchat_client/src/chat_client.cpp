@@ -6,7 +6,7 @@
 *   LICENSE in the project root.
 */
 
-#include "core/chat_client.h"
+#include "chat_client.h"
 
 namespace jchat {
 ChatClient::ChatClient(const char *hostname, uint16_t port)

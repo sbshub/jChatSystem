@@ -9,7 +9,7 @@
 #ifndef jchat_client_system_component_h_
 #define jchat_client_system_component_h_
 
-#include "core/chat_component.h"
+#include "chat_component.h"
 #include "protocol/components/system_message_result.h"
 #include "event.hpp"
 

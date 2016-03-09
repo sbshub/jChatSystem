@@ -44,6 +44,9 @@ class TypedBuffer : Buffer {
       return false;
     }
 
+    // Increase the current position if the read was successful
+    Buffer::SetPosition(Buffer::GetPosition() + sizeof(type));
+
     return true;
   }
 
@@ -148,7 +151,7 @@ public:
       return false;
     }
 
-    size_t length = 0;
+    uint32_t length = 0;
     if (!Buffer::Read(&length)) {
       return false;
     }
@@ -161,7 +164,7 @@ public:
       return false;
     }
 
-    size_t length = 0;
+    uint32_t length = 0;
     if (!Buffer::Read(&length)) {
       return false;
     }
@@ -227,14 +230,14 @@ public:
 
   void WriteString(std::string obj) {
     Buffer::Write<uint8_t>(kDataType_String);
-    size_t length = obj.size();
+    uint32_t length = obj.size();
     Buffer::Write(length);
     Buffer::WriteArray<char>(obj.c_str(), length);
   }
 
   void WriteBlob(std::basic_string<uint8_t> obj) {
     Buffer::Write<uint8_t>(kDataType_Blob);
-    size_t length = obj.size();
+    uint32_t length = obj.size();
     Buffer::Write(length);
     Buffer::WriteArray<uint8_t>(obj.c_str(), length);
   }

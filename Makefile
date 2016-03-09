@@ -1,35 +1,19 @@
-.PHONY: all jchat_server jchat_client clean test_server test_client install \
-	uninstall
-
 all: jchat_server jchat_client
 
-jchat_server: jchat_server/src/main.cpp jchat_server/src/core/chat_server.cpp
-	mkdir -p build
-	g++ -g -pthread -std=c++11 -o build/jchat_server \
-	-I jchat_lib/ \
-	-I jchat_common/ \
-	-I jchat_server/include/ \
-	jchat_server/src/core/chat_server.cpp \
-	jchat_server/src/main.cpp
+jchat_server:
+	make -f Makefile_server build
 
-jchat_client: jchat_client/src/main.cpp
-	mkdir -p build
-	g++ -g -pthread -std=c++11 -o build/jchat_client \
-	-I jchat_lib/ \
-	-I jchat_common/ \
-	-I jchat_client/include/ \
-	jchat_client/src/components/system_component.cpp \
-	jchat_client/src/core/chat_client.cpp \
-	jchat_client/src/main.cpp
+jchat_client:
+	make -f Makefile_client build
 
 clean:
 	rm -f build/jchat_server build/jchat_client
 
 test_server:
-	./build/jchat_server
+	./build/prg_jchat_server
 
 test_client:
-	./build/jchat_client
+	./build/prg_jchat_client
 
 install:
 	mkdir -p bin
@@ -38,3 +22,5 @@ install:
 
 uninstall:
 	rm -rf bin
+
+.PHONY: all jchat_server jchat_client clean test_server test_client install uninstall

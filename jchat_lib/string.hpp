@@ -10,10 +10,14 @@
 #define jchat_lib_string_hpp_
 
 // Required libraries
+#include "platform.h"
 #include <stdarg.h>
-#include <string.h>
+#include <string>
 #include <algorithm>
 #include <vector>
+#if defined(OS_LINUX)
+#include <string.h>
+#endif
 
 #ifndef JCHAT_STRING_BUFFER_SIZE
 #define JCHAT_STRING_BUFFER_SIZE 1024

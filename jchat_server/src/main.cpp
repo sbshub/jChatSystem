@@ -7,7 +7,7 @@
 */
 
 // Required libraries
-#include "core/chat_server.h"
+#include "chat_server.h"
 #include <iostream>
 #include <chrono>
 #include <thread>

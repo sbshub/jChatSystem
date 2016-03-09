@@ -6,7 +6,7 @@
 *   LICENSE in the project root.
 */
 
-#include "core/chat_server.h"
+#include "chat_server.h"
 
 namespace jchat {
 ChatServer::ChatServer(const char *hostname, uint16_t port)
@@ -191,6 +191,9 @@ bool ChatServer::onClientConnected(TcpClient &tcp_client) {
   // address and port)
   chat_client->Endpoint = tcp_client.GetRemoteEndpoint();
 
+  // TODO/NOTE: These shouldn't be a part of the RemoteChatClient class
+  // but should be part of the system component, which will offer API functions
+  // in order to obtain such info (username/hostname/etc...)
   // This username should be fine as the client will not be able to
   // join any channels or do anything unless they've identified
   chat_client->Username = "guest";

@@ -7,7 +7,7 @@
 */
 
 #include "components/system_component.h"
-#include "core/chat_client.h"
+#include "chat_client.h"
 #include "protocol/version.h"
 #include "protocol/components/system_message_type.h"
 

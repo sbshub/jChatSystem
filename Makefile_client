@@ -1,0 +1,24 @@
+# Compile configuration
+SRC = $(wildcard jchat_client/src/*.cpp) $(wildcard jchat_client/src/*/*.cpp)
+OBJ = $(patsubst %.cpp, %.o, $(SRC))
+
+all: clean build
+
+clean:
+	rm -f build/jchat_client
+
+build: jchat_client
+	echo "Build complete!"
+
+%.o: %.cpp
+	g++ -c -g -std=c++11 \
+	-I jchat_lib/ \
+	-I jchat_common/ \
+	-I jchat_client/include/ \
+	-o $*.o $*.cpp
+
+jchat_client: $(OBJ)
+	g++ -g -pthread -std=c++11 -o build/jchat_client $(OBJ)
+	rm -f $(OBJ)
+
+.PHONY: all clean build %.o jchat_client

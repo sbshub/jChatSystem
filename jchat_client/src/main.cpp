@@ -7,7 +7,7 @@
 */
 
 // Required libraries
-#include "core/chat_client.h"
+#include "chat_client.h"
 #include "components/system_component.h"
 #include "string.hpp"
 #include <iostream>
