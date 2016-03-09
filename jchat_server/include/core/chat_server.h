@@ -16,14 +16,10 @@
 #include "chat_channel.h"
 #include "protocol/version.h"
 #include "protocol/component_type.h"
-#include "protocol/message_result.h"
-#include "protocol/user/user_message_type.h"
 #include <map>
 
 namespace jchat {
 class ChatServer {
-  friend class ChatComponent;
-
   bool is_listening_;
   TcpServer tcp_server_;
   bool is_little_endian_;
@@ -40,7 +36,6 @@ class ChatServer {
   bool onDataReceived(TcpClient &tcp_client, Buffer &buffer);
 
   // Internal functions
-  TypedBuffer createBuffer();
   bool getTcpClient(RemoteChatClient &client, TcpClient *out_client);
 
   // Send functions
@@ -49,12 +44,6 @@ class ChatServer {
   bool sendUnicast(TcpClient *client, ComponentType component_type,
     uint8_t message_type, TypedBuffer &buffer);
   bool sendMulticast(std::vector<TcpClient *> clients,
-    ComponentType component_type, uint8_t message_type, TypedBuffer &buffer);
-  bool sendUnicast(RemoteChatClient &client, ComponentType component_type,
-    uint8_t message_type, TypedBuffer &buffer);
-  bool sendUnicast(RemoteChatClient *client, ComponentType component_type,
-    uint8_t message_type, TypedBuffer &buffer);
-  bool sendMulticast(std::vector<RemoteChatClient *> clients,
     ComponentType component_type, uint8_t message_type, TypedBuffer &buffer);
 
 public:
@@ -67,11 +56,20 @@ public:
   bool AddComponent(ChatComponent *component);
   bool RemoveComponent(ChatComponent *component);
 
-  ChatComponent *GetComponent(ComponentType component_type);
+  bool GetComponent(ComponentType component_type, ChatComponent *out_component);
   template<typename _TComponent>
-  _TComponent *GetComponent(ComponentType component_type) {
-    return reinterpret_cast<_TComponent *>(GetComponent(component_type));
+  bool GetComponent(ComponentType component_type, _TComponent *out_component) {
+     return GetComponent(component_type,
+       reinterpret_cast<ChatComponent *>(out_component));
   }
+  
+  TypedBuffer CreateBuffer();
+  bool SendUnicast(RemoteChatClient &client, ComponentType component_type,
+    uint8_t message_type, TypedBuffer &buffer);
+  bool SendUnicast(RemoteChatClient *client, ComponentType component_type,
+    uint8_t message_type, TypedBuffer &buffer);
+  bool SendMulticast(std::vector<RemoteChatClient *> clients,
+    ComponentType component_type, uint8_t message_type, TypedBuffer &buffer);
 
   IPEndpoint GetListenEndpoint();
 

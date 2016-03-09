@@ -27,7 +27,7 @@ public:
 
   // Handler functions
   virtual ComponentType GetType() = 0;
-  virtual bool Handle(ChatClient &client, uint8_t message_type,
+  virtual bool Handle(ChatClient &client, uint16_t message_type,
     TypedBuffer &buffer) = 0;
 };
 }

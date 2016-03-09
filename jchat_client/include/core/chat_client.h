@@ -16,19 +16,14 @@
 #include "chat_channel.h"
 #include "protocol/version.h"
 #include "protocol/component_type.h"
-#include "protocol/message_result.h"
-#include "protocol/user/user_message_type.h"
 
 namespace jchat {
 class ChatClient {
-  friend class ChatComponent;
-
   bool is_connected_;
   TcpClient tcp_client_;
   bool is_little_endian_;
   std::vector<ChatComponent *> components_;
   std::mutex components_mutex_;
-  // NOTE: These are the channels that the client is in...
   std::vector<ChatChannel *> channels_;
   std::mutex channels_mutex_;
   RemoteChatClient chat_client_;
@@ -38,13 +33,6 @@ class ChatClient {
   bool onDisconnected();
   bool onDataReceived(Buffer &buffer);
 
-  // Internal functions
-  TypedBuffer createBuffer();
-
-  // Send functions
-  bool send(ComponentType component_type, uint8_t message_type,
-    TypedBuffer &buffer);
-
 public:
   ChatClient(const char *hostname, uint16_t port);
   ~ChatClient();
@@ -52,14 +40,19 @@ public:
   bool Connect();
   bool Disconnect();
 
-  bool AddHandler(ChatComponent *component);
-  bool RemoveHandler(ChatComponent *component);
+  bool AddComponent(ChatComponent *component);
+  bool RemoveComponent(ChatComponent *component);
 
-  ChatComponent *GetComponent(ComponentType component_type);
+  bool GetComponent(ComponentType component_type, ChatComponent *out_component);
   template<typename _TComponent>
-  _TComponent *GetComponent(ComponentType component_type) {
-    return reinterpret_cast<_TComponent *>(GetComponent(component_type));
+  bool GetComponent(ComponentType component_type, _TComponent *out_component) {
+     return GetComponent(component_type,
+       reinterpret_cast<ChatComponent *>(out_component));
   }
+
+  TypedBuffer CreateBuffer();
+  bool Send(ComponentType component_type, uint8_t message_type,
+    TypedBuffer &buffer);
 
   IPEndpoint GetLocalEndpoint();
   IPEndpoint GetRemoteEndpoint();

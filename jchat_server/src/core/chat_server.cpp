@@ -129,16 +129,55 @@ bool ChatServer::RemoveComponent(ChatComponent *component) {
   return false;
 }
 
-ChatComponent *ChatServer::GetComponent(ComponentType component_type) {
+bool ChatServer::GetComponent(ComponentType component_type,
+  ChatComponent *out_component) {
   components_mutex_.lock();
   for (auto component : components_) {
     if (component->GetType() == component_type) {
       components_mutex_.unlock();
-      return component;
+      out_component = component;
+      return true;
     }
   }
   components_mutex_.unlock();
-  return 0;
+  return false;
+}
+
+TypedBuffer ChatServer::CreateBuffer() {
+    return TypedBuffer(!is_little_endian_);
+}
+
+bool ChatServer::SendUnicast(RemoteChatClient &client,
+  ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
+  TcpClient *tcp_client = NULL;
+  if (!getTcpClient(client, tcp_client)) {
+    return false;
+  }
+  return sendUnicast(tcp_client, component_type, message_type, buffer);
+}
+
+bool ChatServer::SendUnicast(RemoteChatClient *client,
+  ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
+  TcpClient *tcp_client = NULL;
+  if (!getTcpClient(*client, tcp_client)) {
+    return false;
+  }
+  return sendUnicast(tcp_client, component_type, message_type, buffer);
+}
+
+bool ChatServer::SendMulticast(std::vector<RemoteChatClient *> clients,
+  ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
+  bool success = true;
+  for (auto client : clients) {
+    TcpClient *tcp_client = NULL;
+    if (!getTcpClient(*client, tcp_client)) {
+      return false;
+    }
+    if (!sendUnicast(tcp_client, component_type, message_type, buffer)) {
+      success = false;
+    }
+  }
+  return success;
 }
 
 IPEndpoint ChatServer::GetListenEndpoint() {
@@ -224,10 +263,6 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
   return handled;
 }
 
-TypedBuffer ChatServer::createBuffer() {
-    return TypedBuffer(!is_little_endian_);
-}
-
 bool ChatServer::getTcpClient(RemoteChatClient &client, TcpClient *out_client) {
   clients_mutex_.lock();
   for (auto pair : clients_) {
@@ -266,39 +301,6 @@ bool ChatServer::sendMulticast(std::vector<TcpClient *> clients,
   bool success = true;
   for (auto client : clients) {
     if (!sendUnicast(client, component_type, message_type, buffer)) {
-      success = false;
-    }
-  }
-  return success;
-}
-
-bool ChatServer::sendUnicast(RemoteChatClient &client,
-  ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
-  TcpClient *tcp_client = NULL;
-  if (!getTcpClient(client, tcp_client)) {
-    return false;
-  }
-  return sendUnicast(tcp_client, component_type, message_type, buffer);
-}
-
-bool ChatServer::sendUnicast(RemoteChatClient *client,
-  ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
-  TcpClient *tcp_client = NULL;
-  if (!getTcpClient(*client, tcp_client)) {
-    return false;
-  }
-  return sendUnicast(tcp_client, component_type, message_type, buffer);
-}
-
-bool ChatServer::sendMulticast(std::vector<RemoteChatClient *> clients,
-  ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
-  bool success = true;
-  for (auto client : clients) {
-    TcpClient *tcp_client = NULL;
-    if (!getTcpClient(*client, tcp_client)) {
-      return false;
-    }
-    if (!sendUnicast(tcp_client, component_type, message_type, buffer)) {
       success = false;
     }
   }

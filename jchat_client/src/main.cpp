@@ -8,6 +8,7 @@
 
 // Required libraries
 #include "core/chat_client.h"
+#include "components/system_component.h"
 #include "string.hpp"
 #include <iostream>
 #include <chrono>
@@ -18,6 +19,8 @@ int main(int argc, char **argv) {
   std::cout << "jChatSystem - Client" << std::endl;
 
   jchat::ChatClient chat_client("127.0.0.1", 9998);
+  jchat::SystemComponent system_component;
+  chat_client.AddComponent(&system_component);
   chat_client.OnDisconnected.Add([]() {
     std::cout << "Disconnected from server" << std::endl;
     exit(0);

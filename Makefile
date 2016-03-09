@@ -18,6 +18,7 @@ jchat_client: jchat_client/src/main.cpp
 	-I jchat_lib/ \
 	-I jchat_common/ \
 	-I jchat_client/include/ \
+	jchat_client/src/components/system_component.cpp \
 	jchat_client/src/core/chat_client.cpp \
 	jchat_client/src/main.cpp
 

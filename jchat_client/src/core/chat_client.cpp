@@ -33,14 +33,6 @@ ChatClient::~ChatClient() {
     }
     channels_.clear();
   }
-
-  // Remove components
-  if (!components_.empty()) {
-    for (auto component : components_) {
-      delete component;
-    }
-    components_.clear();
-  }
 }
 
 bool ChatClient::Connect() {
@@ -81,7 +73,7 @@ bool ChatClient::Disconnect() {
   return true;
 }
 
-bool ChatClient::AddHandler(ChatComponent *component) {
+bool ChatClient::AddComponent(ChatComponent *component) {
   components_mutex_.lock();
   for (auto it = components_.begin(); it != components_.end();) {
     if (*it == component) {
@@ -99,7 +91,7 @@ bool ChatClient::AddHandler(ChatComponent *component) {
   return true;
 }
 
-bool ChatClient::RemoveHandler(ChatComponent *component) {
+bool ChatClient::RemoveComponent(ChatComponent *component) {
   components_mutex_.lock();
   for (auto it = components_.begin(); it != components_.end();) {
     if (*it == component) {
@@ -116,16 +108,37 @@ bool ChatClient::RemoveHandler(ChatComponent *component) {
   return false;
 }
 
-ChatComponent *ChatClient::GetComponent(ComponentType component_type) {
+bool ChatClient::GetComponent(ComponentType component_type,
+  ChatComponent *out_component) {
   components_mutex_.lock();
   for (auto component : components_) {
     if (component->GetType() == component_type) {
       components_mutex_.unlock();
-      return component;
+      out_component = component;
+      return true;
     }
   }
   components_mutex_.unlock();
-  return 0;
+  return false;
+}
+
+TypedBuffer ChatClient::CreateBuffer() {
+  return TypedBuffer(!is_little_endian_);
+}
+
+bool ChatClient::Send(ComponentType component_type, uint8_t message_type,
+  TypedBuffer &buffer) {
+  Buffer temp_buffer(!is_little_endian_);
+
+  // Write header
+  temp_buffer.Write<uint8_t>(component_type);
+  temp_buffer.Write<uint16_t>(message_type);
+  temp_buffer.Write<uint32_t>(buffer.GetSize());
+
+  // Write body
+  temp_buffer.WriteArray<uint8_t>(buffer.GetBuffer(), buffer.GetSize());
+
+  return tcp_client_.Send(temp_buffer);
 }
 
 IPEndpoint ChatClient::GetLocalEndpoint() {
@@ -189,24 +202,5 @@ bool ChatClient::onDataReceived(Buffer &buffer) {
   components_mutex_.unlock();
 
   return handled;
-}
-
-TypedBuffer ChatClient::createBuffer() {
-  return TypedBuffer(!is_little_endian_);
-}
-
-bool ChatClient::send(ComponentType component_type, uint8_t message_type,
-  TypedBuffer &buffer) {
-  Buffer temp_buffer(!is_little_endian_);
-
-  // Write header
-  temp_buffer.Write<uint8_t>(component_type);
-  temp_buffer.Write<uint16_t>(message_type);
-  temp_buffer.Write<uint32_t>(buffer.GetSize());
-
-  // Write body
-  temp_buffer.WriteArray<uint8_t>(buffer.GetBuffer(), buffer.GetSize());
-
-  return tcp_client_.Send(temp_buffer);
 }
 }

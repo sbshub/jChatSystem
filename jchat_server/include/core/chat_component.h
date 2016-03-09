@@ -28,7 +28,7 @@ public:
   // Handler functions
   virtual ComponentType GetType() = 0;
   virtual bool Handle(ChatServer &server, RemoteChatClient &client,
-    uint8_t message_type, TypedBuffer &buffer) = 0;
+    uint16_t message_type, TypedBuffer &buffer) = 0;
 };
 }
 
