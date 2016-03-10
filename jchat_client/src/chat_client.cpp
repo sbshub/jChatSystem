@@ -7,8 +7,6 @@
 */
 
 #include "chat_client.h"
-// NOTE: Debug!
-#include <iostream>
 
 namespace jchat {
 ChatClient::ChatClient(const char *hostname, uint16_t port)

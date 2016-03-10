@@ -7,8 +7,6 @@
 */
 
 #include "chat_server.h"
-// NOTE: Debug!
-#include <iostream>
 
 namespace jchat {
 ChatServer::ChatServer(const char *hostname, uint16_t port)
@@ -192,11 +190,11 @@ bool ChatServer::onClientConnected(TcpClient &tcp_client) {
   // address and port)
   chat_client->Endpoint = tcp_client.GetRemoteEndpoint();
 
-  // Set a random client username until the client has identified
-  chat_client->Username = "guest";
-
-  // The client's hostname is not masked until they've identified
-  chat_client->Hostname = chat_client->Endpoint.GetAddressString();
+  components_mutex_.lock();
+  for (auto component : components_) {
+    component->OnClientConnected(*chat_client);
+  }
+  components_mutex_.unlock();
 
   clients_mutex_.lock();
   clients_[&tcp_client] = chat_client;
@@ -211,6 +209,12 @@ bool ChatServer::onClientDisconnected(TcpClient &tcp_client) {
   clients_mutex_.lock();
   RemoteChatClient *chat_client = clients_[&tcp_client];
   clients_mutex_.unlock();
+
+  components_mutex_.lock();
+  for (auto component : components_) {
+    component->OnClientDisconnected(*chat_client);
+  }
+  components_mutex_.unlock();
 
   // TODO/NOTE: We need to remove the client from any channels where they're in
   // or where they have operator or any privileges, and we can do this in the
