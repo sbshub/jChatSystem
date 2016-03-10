@@ -7,6 +7,8 @@
 */
 
 #include "chat_server.h"
+// NOTE: Debug!
+#include <iostream>
 
 namespace jchat {
 ChatServer::ChatServer(const char *hostname, uint16_t port)
@@ -41,14 +43,6 @@ ChatServer::~ChatServer() {
       delete channel;
     }
     channels_.clear();
-  }
-
-  // Remove components
-  if (!components_.empty()) {
-    for (auto component : components_) {
-      delete component;
-    }
-    components_.clear();
   }
 }
 
@@ -109,6 +103,10 @@ bool ChatServer::AddComponent(ChatComponent *component) {
       return false;
     }
   }
+  if (!component->Initialize(*this)) {
+    components_mutex_.unlock();
+    return false;
+  }
   components_.push_back(component);
   components_mutex_.unlock();
 
@@ -119,6 +117,9 @@ bool ChatServer::RemoveComponent(ChatComponent *component) {
   components_mutex_.lock();
   for (auto it = components_.begin(); it != components_.end();) {
     if (*it == component) {
+      if (!component->Shutdown()) {
+        return false;
+      }
       components_.erase(it);
       components_mutex_.unlock();
       return true;
@@ -150,19 +151,19 @@ TypedBuffer ChatServer::CreateBuffer() {
 bool ChatServer::SendUnicast(RemoteChatClient &client,
   ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
   TcpClient *tcp_client = NULL;
-  if (!getTcpClient(client, tcp_client)) {
+  if (!getTcpClient(client, &tcp_client)) {
     return false;
   }
-  return sendUnicast(tcp_client, component_type, message_type, buffer);
+  return sendUnicast(*tcp_client, component_type, message_type, buffer);
 }
 
 bool ChatServer::SendUnicast(RemoteChatClient *client,
   ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
   TcpClient *tcp_client = NULL;
-  if (!getTcpClient(*client, tcp_client)) {
+  if (!getTcpClient(*client, &tcp_client)) {
     return false;
   }
-  return sendUnicast(tcp_client, component_type, message_type, buffer);
+  return sendUnicast(*tcp_client, component_type, message_type, buffer);
 }
 
 bool ChatServer::SendMulticast(std::vector<RemoteChatClient *> clients,
@@ -170,10 +171,10 @@ bool ChatServer::SendMulticast(std::vector<RemoteChatClient *> clients,
   bool success = true;
   for (auto client : clients) {
     TcpClient *tcp_client = NULL;
-    if (!getTcpClient(*client, tcp_client)) {
+    if (!getTcpClient(*client, &tcp_client)) {
       return false;
     }
-    if (!sendUnicast(tcp_client, component_type, message_type, buffer)) {
+    if (!sendUnicast(*tcp_client, component_type, message_type, buffer)) {
       success = false;
     }
   }
@@ -191,11 +192,7 @@ bool ChatServer::onClientConnected(TcpClient &tcp_client) {
   // address and port)
   chat_client->Endpoint = tcp_client.GetRemoteEndpoint();
 
-  // TODO/NOTE: These shouldn't be a part of the RemoteChatClient class
-  // but should be part of the system component, which will offer API functions
-  // in order to obtain such info (username/hostname/etc...)
-  // This username should be fine as the client will not be able to
-  // join any channels or do anything unless they've identified
+  // Set a random client username until the client has identified
   chat_client->Username = "guest";
 
   // The client's hostname is not masked until they've identified
@@ -211,7 +208,9 @@ bool ChatServer::onClientConnected(TcpClient &tcp_client) {
 }
 
 bool ChatServer::onClientDisconnected(TcpClient &tcp_client) {
+  clients_mutex_.lock();
   RemoteChatClient *chat_client = clients_[&tcp_client];
+  clients_mutex_.unlock();
 
   // TODO/NOTE: We need to remove the client from any channels where they're in
   // or where they have operator or any privileges, and we can do this in the
@@ -249,14 +248,16 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
   TypedBuffer typed_buffer(buffer.GetBuffer() + buffer.GetPosition(),
     size, !is_little_endian_);
 
+  clients_mutex_.lock();
   RemoteChatClient *chat_client = clients_[&tcp_client];
+  clients_mutex_.unlock();
 
   // Try to handle the request, if it is unhandled, drop the connection
   bool handled = false;
   components_mutex_.lock();
   for (auto component : components_) {
-    if (component->GetType() == message_type) {
-      if (component->Handle(*this, *chat_client, message_type, typed_buffer)) {
+    if (component->GetType() == static_cast<ComponentType>(component_type)) {
+      if (component->Handle(*chat_client, message_type, typed_buffer)) {
         handled = true;
       }
     }
@@ -266,12 +267,12 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
   return handled;
 }
 
-bool ChatServer::getTcpClient(RemoteChatClient &client, TcpClient *out_client) {
+bool ChatServer::getTcpClient(RemoteChatClient &client, TcpClient **out_client) {
   clients_mutex_.lock();
   for (auto pair : clients_) {
     if (pair.second == &client) {
       clients_mutex_.unlock();
-      out_client = pair.first;
+      *out_client = pair.first;
       return true;
     }
   }

@@ -7,6 +7,8 @@
 */
 
 #include "chat_client.h"
+// NOTE: Debug!
+#include <iostream>
 
 namespace jchat {
 ChatClient::ChatClient(const char *hostname, uint16_t port)
@@ -95,7 +97,7 @@ bool ChatClient::RemoveComponent(ChatComponent *component) {
   components_mutex_.lock();
   for (auto it = components_.begin(); it != components_.end();) {
     if (*it == component) {
-      if (!component->Shutdown(*this)) {
+      if (!component->Shutdown()) {
         return false;
       }
       components_.erase(it);
@@ -152,7 +154,7 @@ IPEndpoint ChatClient::GetRemoteEndpoint() {
 bool ChatClient::onConnected() {
   components_mutex_.lock();
   for (auto component : components_) {
-    component->OnConnected(*this);
+    component->OnConnected();
   }
   components_mutex_.unlock();
 
@@ -162,7 +164,7 @@ bool ChatClient::onConnected() {
 bool ChatClient::onDisconnected() {
   components_mutex_.lock();
   for (auto component : components_) {
-    component->OnDisconnected(*this);
+    component->OnDisconnected();
   }
   components_mutex_.unlock();
 
@@ -194,7 +196,7 @@ bool ChatClient::onDataReceived(Buffer &buffer) {
   components_mutex_.lock();
   for (auto component : components_) {
     if (component->GetType() == static_cast<ComponentType>(component_type)) {
-      if (component->Handle(*this, message_type, typed_buffer)) {
+      if (component->Handle(message_type, typed_buffer)) {
         handled = true;
       }
     }

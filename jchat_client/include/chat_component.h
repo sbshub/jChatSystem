@@ -19,16 +19,15 @@ class ChatComponent {
 public:
   // Internal functions
   virtual bool Initialize(ChatClient &client) = 0;
-  virtual bool Shutdown(ChatClient &client) = 0;
+  virtual bool Shutdown() = 0;
 
   // Internal events
-  virtual void OnConnected(ChatClient &client) = 0;
-  virtual void OnDisconnected(ChatClient &client) = 0;
+  virtual void OnConnected() = 0;
+  virtual void OnDisconnected() = 0;
 
   // Handler functions
   virtual ComponentType GetType() = 0;
-  virtual bool Handle(ChatClient &client, uint16_t message_type,
-    TypedBuffer &buffer) = 0;
+  virtual bool Handle(uint16_t message_type, TypedBuffer &buffer) = 0;
 };
 }
 

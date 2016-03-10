@@ -36,7 +36,7 @@ class ChatServer {
   bool onDataReceived(TcpClient &tcp_client, Buffer &buffer);
 
   // Internal functions
-  bool getTcpClient(RemoteChatClient &client, TcpClient *out_client);
+  bool getTcpClient(RemoteChatClient &client, TcpClient **out_client);
 
   // Send functions
   bool sendUnicast(TcpClient &client, ComponentType component_type,
@@ -62,7 +62,7 @@ public:
      return GetComponent(component_type,
        reinterpret_cast<ChatComponent *>(out_component));
   }
-  
+
   TypedBuffer CreateBuffer();
   bool SendUnicast(RemoteChatClient &client, ComponentType component_type,
     uint8_t message_type, TypedBuffer &buffer);

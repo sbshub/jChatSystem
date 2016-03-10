@@ -8,6 +8,7 @@
 
 // Required libraries
 #include "chat_server.h"
+#include "components/system_component.h"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -17,6 +18,8 @@ int main(int argc, char **argv) {
   std::cout << "jChatSystem - Server" << std::endl;
 
   jchat::ChatServer chat_server("0.0.0.0", 9998);
+  jchat::SystemComponent system_component;
+  chat_server.AddComponent(&system_component);
   chat_server.OnClientConnected.Add([](jchat::RemoteChatClient &client) {
     std::cout << "Client from "
               << client.Endpoint.ToString()

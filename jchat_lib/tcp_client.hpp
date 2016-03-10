@@ -80,10 +80,16 @@ class TcpClient {
       if (FD_ISSET(client_socket_, &socket_set)) {
         uint32_t read_bytes = recv(client_socket_, read_buffer_.data(),
           read_buffer_.size(), 0);
+        bool disconnect_client = false;
         if (read_bytes > 0) {
           Buffer buffer(read_buffer_.data(), read_bytes);
-          OnDataReceived(buffer);
+          if (!OnDataReceived(buffer)) {
+            disconnect_client = true;
+          }
         } else {
+          disconnect_client = true;
+        }
+        if (disconnect_client) {
           is_connected_ = false;
           closesocket(client_socket_);
           OnDisconnected();

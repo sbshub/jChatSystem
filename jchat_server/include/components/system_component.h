@@ -6,8 +6,8 @@
 *   LICENSE in the project root.
 */
 
-#ifndef jchat_client_system_component_h_
-#define jchat_client_system_component_h_
+#ifndef jchat_server_system_component_h_
+#define jchat_server_system_component_h_
 
 #include "chat_component.h"
 #include "protocol/components/system_message_result.h"
@@ -16,30 +16,25 @@
 namespace jchat {
 class SystemComponent : public ChatComponent {
 private:
-  ChatClient *client_;
+  ChatServer *server_;
 
 public:
   SystemComponent();
   ~SystemComponent();
 
   // Internal functions
-  virtual bool Initialize(ChatClient &client) override;
+  virtual bool Initialize(ChatServer &server) override;
   virtual bool Shutdown() override;
 
   // Internal events
-  virtual void OnConnected() override;
-  virtual void OnDisconnected() override;
+  virtual void OnClientConnected(RemoteChatClient &client) override;
+  virtual void OnClientDisconnected(RemoteChatClient &client) override;
 
   // Handler functions
   virtual ComponentType GetType() override;
-  virtual bool Handle(uint16_t message_type, TypedBuffer &buffer) override;
-
-  // API functions
-  bool SendHello();
-
-  // API events
-  Event<SystemMessageResult> OnHelloCompleted;
+  virtual bool Handle(RemoteChatClient &client, uint16_t message_type,
+    TypedBuffer &buffer) override;
 };
 }
 
-#endif // jchat_client_system_component_h_
+#endif // jchat_server_system_component_h_

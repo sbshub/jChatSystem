@@ -23,18 +23,19 @@ bool SystemComponent::Initialize(ChatClient &client) {
   return true;
 }
 
-bool SystemComponent::Shutdown(ChatClient &client) {
+bool SystemComponent::Shutdown() {
+  client_ = 0;
   return true;
 }
 
-void SystemComponent::OnConnected(ChatClient &client) {
+void SystemComponent::OnConnected() {
   // Send a hello to the server specifying the protocol version
   // this is used to see if this specific protocol is accepted by
   // the server
   SendHello();
 }
 
-void SystemComponent::OnDisconnected(ChatClient &client) {
+void SystemComponent::OnDisconnected() {
 
 }
 
@@ -42,8 +43,7 @@ ComponentType SystemComponent::GetType() {
   return kComponentType_System;
 }
 
-bool SystemComponent::Handle(ChatClient &client, uint16_t message_type,
-  TypedBuffer &buffer) {
+bool SystemComponent::Handle(uint16_t message_type, TypedBuffer &buffer) {
   if (message_type == kSystemMessageType_Complete_Hello) {
     uint16_t message_result = 0;
     if (!buffer.ReadUInt16(message_result)) {
@@ -53,11 +53,10 @@ bool SystemComponent::Handle(ChatClient &client, uint16_t message_type,
     if (message_result != kSystemMessageResult_Ok) {
       return false;
     }
-  } else {
-    return false;
+    return true;
   }
 
-  return true;
+  return false;
 }
 
 bool SystemComponent::SendHello() {

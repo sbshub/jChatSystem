@@ -11,7 +11,6 @@
 
 // Required libraries
 #include "tcp_client.hpp"
-#include "remote_chat_client.h"
 #include "chat_component.h"
 #include "chat_channel.h"
 #include "protocol/version.h"
@@ -26,7 +25,6 @@ class ChatClient {
   std::mutex components_mutex_;
   std::vector<ChatChannel *> channels_;
   std::mutex channels_mutex_;
-  RemoteChatClient chat_client_;
 
   // Internal events
   bool onConnected();

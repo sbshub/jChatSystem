@@ -90,7 +90,7 @@ public:
     // Read the data into the object buffer
     uint8_t *p_buffer = *(uint8_t **)&obj;
     for (size_t i = 0; i < size; i++) {
-      p_buffer[i] = buffer_.data()[current_position_++];
+      p_buffer[i] = buffer_.data()[current_position_];
       current_position_++;
     }
     // Flip the endian order of the object

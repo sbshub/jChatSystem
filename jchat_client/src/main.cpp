@@ -20,6 +20,15 @@ int main(int argc, char **argv) {
 
   jchat::ChatClient chat_client("127.0.0.1", 9998);
   jchat::SystemComponent system_component;
+  system_component.OnHelloCompleted.Add([](jchat::SystemMessageResult result) {
+    if (result == jchat::kSystemMessageResult_Ok) {
+      std::cout << "System: Hello succeeded" << std::endl;
+    } else if (result == jchat::kSystemMessageResult_InvalidProtocolVersion) {
+      std::cout << "System: Invalid protocol version!" << std::endl;
+      exit(0);
+    }
+    return true;
+  });
   chat_client.AddComponent(&system_component);
   chat_client.OnDisconnected.Add([]() {
     std::cout << "Disconnected from server" << std::endl;
