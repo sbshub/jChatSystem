@@ -10,8 +10,6 @@
 #include "chat_server.h"
 #include "protocol/version.h"
 #include "protocol/components/system_message_type.h"
-// NOTE: Debug!
-#include <iostream>
 
 namespace jchat {
 SystemComponent::SystemComponent() {
@@ -31,7 +29,12 @@ bool SystemComponent::Shutdown() {
 }
 
 void SystemComponent::OnClientConnected(RemoteChatClient &client) {
-  std::cout << "Client connected WOAH!" << std::endl;
+  // Give the client a guest username (which will prevent it from accessing
+  // anything until it has authenticated)
+  client.Username = "guest";
+
+  // Set the IP address as the endpoint until the client authenticates
+  client.Hostname = client.Endpoint.GetAddressString();
 }
 
 void SystemComponent::OnClientDisconnected(RemoteChatClient &client) {

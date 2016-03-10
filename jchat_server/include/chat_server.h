@@ -25,6 +25,7 @@ class ChatServer {
   bool is_little_endian_;
   std::vector<ChatComponent *> components_;
   std::mutex components_mutex_;
+  // TODO/NOTE: Move this to the channel component (subclasses)
   std::vector<ChatChannel *> channels_;
   std::mutex channels_mutex_;
   std::map<TcpClient *, RemoteChatClient *> clients_;
