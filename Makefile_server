@@ -7,7 +7,10 @@ all: clean build
 clean:
 	rm -f build/jchat_server
 
-build: jchat_server
+pre_build:
+	mkdir -p build
+
+build: pre_build jchat_server
 	echo "Build complete!"
 
 %.o: %.cpp
@@ -21,4 +24,4 @@ jchat_server: $(OBJ)
 	g++ -g -pthread -std=c++11 -o build/jchat_server $(OBJ)
 	rm -f $(OBJ)
 
-.PHONY: all clean build %.o jchat_server
+.PHONY: all clean pre_build build %.o jchat_server
