@@ -20,7 +20,7 @@ NOTE: Make sure you have git, g++, and make installed on your system.
 2. Adding new directories or files to be monitored by git: `git add <path>`
 3. Update commit with relevant changes `git stage .` (Updates commit with all changes)
 4. Commit your changes: `git commit -m "Your message"`
-5. Push your commit: `git push -u origin alpha`
+5. Push your commit: `git push -u origin bravo`
 6. Enter your credentials when prompted.
 
 #### Users without access to this repository
