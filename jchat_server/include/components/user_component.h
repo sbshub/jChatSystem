@@ -6,21 +6,25 @@
 *   LICENSE in the project root.
 */
 
-#ifndef jchat_server_system_component_h_
-#define jchat_server_system_component_h_
+#ifndef jchat_server_user_component_h_
+#define jchat_server_user_component_h_
 
 #include "chat_component.h"
-#include "protocol/components/system_message_result.h"
+#include "chat_user.h"
+#include "protocol/components/user_message_result.h"
 #include "event.hpp"
+#include <map>
 
 namespace jchat {
-class SystemComponent : public ChatComponent {
+class UserComponent : public ChatComponent {
 private:
   ChatServer *server_;
+  std::map<RemoteChatClient *, ChatUser *> users_;
+  std::mutex users_mutex_;
 
 public:
-  SystemComponent();
-  ~SystemComponent();
+  UserComponent();
+  ~UserComponent();
 
   // Internal functions
   virtual bool Initialize(ChatServer &server) override;
@@ -37,10 +41,7 @@ public:
   virtual ComponentType GetType() override;
   virtual bool Handle(RemoteChatClient &client, uint16_t message_type,
     TypedBuffer &buffer) override;
-
-  // API events
-  Event<RemoteChatClient &> OnHelloCompleted;
 };
 }
 
-#endif // jchat_server_system_component_h_
+#endif // jchat_server_user_component_h_

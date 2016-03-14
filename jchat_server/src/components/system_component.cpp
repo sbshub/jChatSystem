@@ -28,13 +28,16 @@ bool SystemComponent::Shutdown() {
   return true;
 }
 
-void SystemComponent::OnClientConnected(RemoteChatClient &client) {
-  // Give the client a guest username (which will prevent it from accessing
-  // anything until it has authenticated)
-  client.Username = "guest";
+bool SystemComponent::OnStart() {
+  return true;
+}
 
-  // Set the IP address as the endpoint until the client authenticates
-  client.Hostname = client.Endpoint.GetAddressString();
+bool SystemComponent::OnStop() {
+  return true;
+}
+
+void SystemComponent::OnClientConnected(RemoteChatClient &client) {
+  
 }
 
 void SystemComponent::OnClientDisconnected(RemoteChatClient &client) {
@@ -51,6 +54,9 @@ bool SystemComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     std::string protocol_version;
     if (!buffer.ReadString(protocol_version)
       || protocol_version != JCHAT_CHAT_PROTOCOL_VERSION) {
+      return false;
+    }
+    if (!OnHelloCompleted(client)) {
       return false;
     }
     TypedBuffer send_buffer = server_->CreateBuffer();

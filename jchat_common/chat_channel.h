@@ -10,13 +10,16 @@
 #define jchat_common_chat_channel_h_
 
 #include "remote_chat_client.h"
+#include "chat_user.h"
+#include <map>
 
 namespace jchat {
 struct ChatChannel {
   std::string Name;
-  std::vector<RemoteChatClient *> Operators;
+  // TODO/NOTE: This is subject to change
+  std::map<RemoteChatClient *, ChatUser *> Operators;
   std::mutex OperatorsMutex;
-  std::vector<RemoteChatClient *> Clients;
+  std::map<RemoteChatClient *, ChatUser *> Clients;
   std::mutex ClientsMutex;
 };
 }

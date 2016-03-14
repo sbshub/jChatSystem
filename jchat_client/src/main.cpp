@@ -9,6 +9,8 @@
 // Required libraries
 #include "chat_client.h"
 #include "components/system_component.h"
+#include "components/user_component.h"
+#include "components/channel_component.h"
 #include "string.hpp"
 #include <iostream>
 #include <chrono>
@@ -20,6 +22,8 @@ int main(int argc, char **argv) {
 
   jchat::ChatClient chat_client("127.0.0.1", 9998);
   jchat::SystemComponent system_component;
+  jchat::UserComponent user_component;
+  jchat::ChannelComponent channel_component;
   system_component.OnHelloCompleted.Add([](jchat::SystemMessageResult result) {
     if (result == jchat::kSystemMessageResult_Ok) {
       std::cout << "System: Hello succeeded" << std::endl;
@@ -30,6 +34,8 @@ int main(int argc, char **argv) {
     return true;
   });
   chat_client.AddComponent(&system_component);
+  chat_client.AddComponent(&user_component);
+  chat_client.AddComponent(&channel_component);
   chat_client.OnDisconnected.Add([]() {
     std::cout << "Disconnected from server" << std::endl;
     exit(0);

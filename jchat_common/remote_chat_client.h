@@ -17,12 +17,6 @@
 namespace jchat {
 struct RemoteChatClient {
   IPEndpoint Endpoint;
-  std::string Username;
-  std::string Hostname;
-  // TODO/NOTE: Move these to the user component class (subclasses)
-  bool Identified;
-  std::vector<std::string> Channels;
-  std::mutex ChannelsMutex;
 };
 }
 

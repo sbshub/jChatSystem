@@ -7,6 +7,8 @@
 */
 
 #include "chat_server.h"
+// NOTE: Debug!
+#include <iostream>
 
 namespace jchat {
 ChatServer::ChatServer(const char *hostname, uint16_t port)
@@ -34,14 +36,6 @@ ChatServer::~ChatServer() {
     }
     clients_.clear();
   }
-
-  // Remove channels
-  if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
-    }
-    channels_.clear();
-  }
 }
 
 bool ChatServer::Start() {
@@ -52,6 +46,12 @@ bool ChatServer::Start() {
   if (!tcp_server_.Start()) {
     return false;
   }
+
+  components_mutex_.lock();
+  for (auto component : components_) {
+    component->OnStart();
+  }
+  components_mutex_.unlock();
 
   is_listening_ = true;
 
@@ -78,15 +78,11 @@ bool ChatServer::Stop() {
   }
   clients_mutex_.unlock();
 
-  // Remove channels
-  channels_mutex_.lock();
-  if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
-    }
-    channels_.clear();
+  components_mutex_.lock();
+  for (auto component : components_) {
+    component->OnStop();
   }
-  channels_mutex_.unlock();
+  components_mutex_.unlock();
 
   is_listening_ = false;
 
@@ -95,7 +91,7 @@ bool ChatServer::Stop() {
 
 bool ChatServer::AddComponent(ChatComponent *component) {
   components_mutex_.lock();
-  for (auto it = components_.begin(); it != components_.end();) {
+  for (auto it = components_.begin(); it != components_.end(); ++it) {
     if (*it == component) {
       components_mutex_.unlock();
       return false;
@@ -113,7 +109,7 @@ bool ChatServer::AddComponent(ChatComponent *component) {
 
 bool ChatServer::RemoveComponent(ChatComponent *component) {
   components_mutex_.lock();
-  for (auto it = components_.begin(); it != components_.end();) {
+  for (auto it = components_.begin(); it != components_.end(); ++it) {
     if (*it == component) {
       if (!component->Shutdown()) {
         return false;
@@ -219,7 +215,8 @@ bool ChatServer::onClientDisconnected(TcpClient &tcp_client) {
   // TODO/NOTE: We need to remove the client from any channels where they're in
   // or where they have operator or any privileges, and we can do this in the
   // appropriate components using the OnClientDisconnected, etc. events within
-  // them
+  // them -- And remove those channel/identified things from the
+  // RemoteChatClient class
   OnClientDisconnected(*chat_client);
 
   // Remove client
@@ -237,36 +234,47 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
   uint16_t message_type = 0;
   uint32_t size = 0;
 
+  // Determine the header size
+  size_t header_size = sizeof(component_type) + sizeof(message_type)
+    + sizeof(size);
+
   // Flip data endian order if needed
   buffer.SetFlipEndian(!is_little_endian_);
 
-  // Check if the packet is valid
-  if (!buffer.Read(&component_type) || !buffer.Read(&message_type)
-    || !buffer.Read(&size) || buffer.GetSize() - buffer.GetPosition() != size
-    || component_type >= kComponentType_Max) {
-    // Drop connection
-    return false;
-  }
-
-  // Read the packet into a typed buffer
-  TypedBuffer typed_buffer(buffer.GetBuffer() + buffer.GetPosition(),
-    size, !is_little_endian_);
-
-  clients_mutex_.lock();
-  RemoteChatClient *chat_client = clients_[&tcp_client];
-  clients_mutex_.unlock();
-
-  // Try to handle the request, if it is unhandled, drop the connection
+  // Try to handle the requests, if any are unhandled, drop the connection
   bool handled = false;
-  components_mutex_.lock();
-  for (auto component : components_) {
-    if (component->GetType() == static_cast<ComponentType>(component_type)) {
-      if (component->Handle(*chat_client, message_type, typed_buffer)) {
-        handled = true;
+
+  // Keep reading the buffer till the end
+  while (buffer.GetSize() - buffer.GetPosition() >= header_size) {
+    // Check if the packet is valid
+    if (!buffer.Read(&component_type) || !buffer.Read(&message_type)
+      || !buffer.Read(&size) || buffer.GetSize() - buffer.GetPosition() < size
+      || component_type >= kComponentType_Max) {
+      // Drop connection
+      return false;
+    }
+
+    // Read the packet into a typed buffer
+    TypedBuffer typed_buffer(buffer.GetBuffer() + buffer.GetPosition(),
+      size, !is_little_endian_);
+
+    // Increase the position of the buffer
+    buffer.SetPosition(buffer.GetPosition() + size - 1);
+
+    clients_mutex_.lock();
+    RemoteChatClient *chat_client = clients_[&tcp_client];
+    clients_mutex_.unlock();
+
+    components_mutex_.lock();
+    for (auto component : components_) {
+      if (component->GetType() == static_cast<ComponentType>(component_type)) {
+        if (component->Handle(*chat_client, message_type, typed_buffer)) {
+          handled = true;
+        }
       }
     }
+    components_mutex_.unlock();
   }
-  components_mutex_.unlock();
 
   return handled;
 }

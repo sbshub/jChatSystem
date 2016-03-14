@@ -23,8 +23,6 @@ class ChatClient {
   bool is_little_endian_;
   std::vector<ChatComponent *> components_;
   std::mutex components_mutex_;
-  std::vector<ChatChannel *> channels_;
-  std::mutex channels_mutex_;
 
   // Internal events
   bool onConnected();

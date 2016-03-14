@@ -26,13 +26,6 @@ ChatClient::ChatClient(const char *hostname, uint16_t port)
 }
 
 ChatClient::~ChatClient() {
-  // Remove channels
-  if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
-    }
-    channels_.clear();
-  }
 }
 
 bool ChatClient::Connect() {
@@ -58,16 +51,6 @@ bool ChatClient::Disconnect() {
     return false;
   }
 
-  // Remove channels
-  channels_mutex_.lock();
-  if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
-    }
-    channels_.clear();
-  }
-  channels_mutex_.unlock();
-
   is_connected_ = false;
 
   return true;
@@ -75,7 +58,7 @@ bool ChatClient::Disconnect() {
 
 bool ChatClient::AddComponent(ChatComponent *component) {
   components_mutex_.lock();
-  for (auto it = components_.begin(); it != components_.end();) {
+  for (auto it = components_.begin(); it != components_.end(); ++it) {
     if (*it == component) {
       components_mutex_.unlock();
       return false;
@@ -93,7 +76,7 @@ bool ChatClient::AddComponent(ChatComponent *component) {
 
 bool ChatClient::RemoveComponent(ChatComponent *component) {
   components_mutex_.lock();
-  for (auto it = components_.begin(); it != components_.end();) {
+  for (auto it = components_.begin(); it != components_.end(); ++it) {
     if (*it == component) {
       if (!component->Shutdown()) {
         return false;
@@ -174,32 +157,43 @@ bool ChatClient::onDataReceived(Buffer &buffer) {
   uint16_t message_type = 0;
   uint32_t size = 0;
 
-  // Flip data endian order if needed
-  buffer.SetFlipEndian(!is_little_endian_);
+  // Determine the header size
+  size_t header_size = sizeof(component_type) + sizeof(message_type)
+    + sizeof(size);
 
-  // Check if the packet is valid
-  if (!buffer.Read(&component_type) || !buffer.Read(&message_type)
-    || !buffer.Read(&size) || buffer.GetSize() - buffer.GetPosition() != size
-    || component_type >= kComponentType_Max) {
-    // Drop connection
-    return false;
-  }
-
-  // Read the packet into a typed buffer
-  TypedBuffer typed_buffer(buffer.GetBuffer() + buffer.GetPosition(),
-    size, !is_little_endian_);
-
-  // Try to handle the request, if it is unhandled, drop the connection
+  // Try to handle the requests, if any are unhandled, drop the connection
   bool handled = false;
-  components_mutex_.lock();
-  for (auto component : components_) {
-    if (component->GetType() == static_cast<ComponentType>(component_type)) {
-      if (component->Handle(message_type, typed_buffer)) {
-        handled = true;
+
+  // Keep reading the buffer till the end
+  while (buffer.GetSize() - buffer.GetPosition() >= header_size) {
+    // Flip data endian order if needed
+    buffer.SetFlipEndian(!is_little_endian_);
+
+    // Check if the packet is valid
+    if (!buffer.Read(&component_type) || !buffer.Read(&message_type)
+      || !buffer.Read(&size) || buffer.GetSize() - buffer.GetPosition() < size
+      || component_type >= kComponentType_Max) {
+      // Drop connection
+      return false;
+    }
+
+    // Read the packet into a typed buffer
+    TypedBuffer typed_buffer(buffer.GetBuffer() + buffer.GetPosition(),
+      size, !is_little_endian_);
+
+    // Increase the position of the buffer
+    buffer.SetPosition(buffer.GetPosition() + size - 1);
+
+    components_mutex_.lock();
+    for (auto component : components_) {
+      if (component->GetType() == static_cast<ComponentType>(component_type)) {
+        if (component->Handle(message_type, typed_buffer)) {
+          handled = true;
+        }
       }
     }
+    components_mutex_.unlock();
   }
-  components_mutex_.unlock();
 
   return handled;
 }
