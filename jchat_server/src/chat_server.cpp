@@ -7,8 +7,6 @@
 */
 
 #include "chat_server.h"
-// NOTE: Debug!
-#include <iostream>
 
 namespace jchat {
 ChatServer::ChatServer(const char *hostname, uint16_t port)
@@ -250,6 +248,7 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
     if (!buffer.Read(&component_type) || !buffer.Read(&message_type)
       || !buffer.Read(&size) || buffer.GetSize() - buffer.GetPosition() < size
       || component_type >= kComponentType_Max) {
+
       // Drop connection
       return false;
     }
@@ -259,7 +258,7 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
       size, !is_little_endian_);
 
     // Increase the position of the buffer
-    buffer.SetPosition(buffer.GetPosition() + size - 1);
+    buffer.SetPosition(buffer.GetPosition() + size);
 
     clients_mutex_.lock();
     RemoteChatClient *chat_client = clients_[&tcp_client];
@@ -270,6 +269,7 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
       if (component->GetType() == static_cast<ComponentType>(component_type)) {
         if (component->Handle(*chat_client, message_type, typed_buffer)) {
           handled = true;
+          break;
         }
       }
     }

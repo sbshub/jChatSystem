@@ -160,7 +160,7 @@ public:
   bool SetPosition(size_t current_position) {
     // If the specified position is past the end of the buffer
     // return false
-    if (current_position > buffer_.size() - 1) {
+    if (current_position > buffer_.size()) {
       return false;
     }
     current_position_ = current_position;

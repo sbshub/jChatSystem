@@ -182,13 +182,14 @@ bool ChatClient::onDataReceived(Buffer &buffer) {
       size, !is_little_endian_);
 
     // Increase the position of the buffer
-    buffer.SetPosition(buffer.GetPosition() + size - 1);
+    buffer.SetPosition(buffer.GetPosition() + size);
 
     components_mutex_.lock();
     for (auto component : components_) {
       if (component->GetType() == static_cast<ComponentType>(component_type)) {
         if (component->Handle(message_type, typed_buffer)) {
           handled = true;
+          break;
         }
       }
     }

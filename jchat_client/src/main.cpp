@@ -22,8 +22,8 @@ int main(int argc, char **argv) {
 
   jchat::ChatClient chat_client("127.0.0.1", 9998);
   jchat::SystemComponent system_component;
-  jchat::UserComponent user_component;
-  jchat::ChannelComponent channel_component;
+  jchat::SystemComponent user_component;
+  jchat::SystemComponent channel_component;
   system_component.OnHelloCompleted.Add([](jchat::SystemMessageResult result) {
     if (result == jchat::kSystemMessageResult_Ok) {
       std::cout << "System: Hello succeeded" << std::endl;
