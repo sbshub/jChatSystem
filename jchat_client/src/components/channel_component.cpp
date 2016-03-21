@@ -65,7 +65,7 @@ ComponentType ChannelComponent::GetType() {
 }
 
 bool ChannelComponent::Handle(uint16_t message_type, TypedBuffer &buffer) {
-
+  //if (message_type == )
 
   return false;
 }

@@ -13,6 +13,7 @@ namespace jchat {
 struct ChatUser {
   std::string Username;
   std::string Hostname;
+  bool Identified;
 };
 }
 

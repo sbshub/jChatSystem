@@ -14,13 +14,15 @@
 #include <map>
 
 namespace jchat {
+// TODO/NOTE: This is subject to change
 struct ChatChannel {
   std::string Name;
-  // TODO/NOTE: This is subject to change
   std::map<RemoteChatClient *, ChatUser *> Operators;
   std::mutex OperatorsMutex;
   std::map<RemoteChatClient *, ChatUser *> Clients;
   std::mutex ClientsMutex;
+  std::vector<std::string> BannedUsers; // Format: username@hostname
+  std::mutex BannedUsersMutex;
 };
 }
 

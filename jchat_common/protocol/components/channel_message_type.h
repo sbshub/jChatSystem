@@ -14,6 +14,17 @@
 
 namespace jchat {
 enum ChannelMessageType : uint16_t {
+  kChannelMessageType_JoinChannel,
+  kChannelMessageType_JoinChannel_Complete,
+  kChannelMessageType_LeaveChannel,
+  kChannelMessageType_LeaveChannel_Complete,
+  kChannelMessageType_SendMessage,
+  kChannelMessageType_SendMessage_Complete,
+  kCHannelMessageType_KickUser,
+  kCHannelMessageType_KickUser_Complete,
+  kCHannelMessageType_BanUser,
+  kCHannelMessageType_BanUser_Complete,
+
   kChannelMessageType_Max,
 };
 }

@@ -26,10 +26,6 @@
 namespace jchat {
 class String {
 public:
-  static bool Equals(std::string str1, std::string str2) {
-  	return strcmp(str1.c_str(), str2.c_str()) == 0;
-  }
-
   static bool Contains(std::string target, std::string contains) {
   	return strstr(target.c_str(), contains.c_str()) != 0;
   }

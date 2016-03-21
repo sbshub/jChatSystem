@@ -14,6 +14,7 @@
 
 namespace jchat {
 enum UserMessageResult : uint16_t {
+  // General
   kUserMessageResult_Ok,
   kUserMessageResult_Fail,
 

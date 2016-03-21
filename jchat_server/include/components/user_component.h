@@ -41,6 +41,12 @@ public:
   virtual ComponentType GetType() override;
   virtual bool Handle(RemoteChatClient &client, uint16_t message_type,
     TypedBuffer &buffer) override;
+
+  // API functions
+  bool GetChatUser(RemoteChatClient &client, ChatUser *out_user);
+
+  // API events
+
 };
 }
 

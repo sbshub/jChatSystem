@@ -8,6 +8,7 @@ jchat_client:
 
 clean:
 	rm -f build/jchat_server build/jchat_client
+	find ./ -name \*.o -type f -delete
 
 test_server:
 	./build/prg_jchat_server

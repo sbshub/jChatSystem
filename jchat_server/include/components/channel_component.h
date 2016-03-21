@@ -40,6 +40,14 @@ public:
   virtual ComponentType GetType() override;
   virtual bool Handle(RemoteChatClient &client, uint16_t message_type,
     TypedBuffer &buffer) override;
+
+  // API functions
+
+
+  // API events
+  Event<std::string &> OnChannelCreated;
+  Event<ChatUser &> OnChannelJoined;
+
 };
 }
 

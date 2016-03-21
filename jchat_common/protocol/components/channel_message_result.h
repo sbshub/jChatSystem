@@ -14,8 +14,19 @@
 
 namespace jchat {
 enum ChannelMessageResult : uint16_t {
+  // General
   kChannelMessageResult_Ok,
   kChannelMessageResult_Fail,
+
+  kChannelMessageResult_NotIdentified,
+
+  // JoinChannel
+  kChannelMessageResult_InvalidChannelName,
+  kChannelMessageResult_ChannelCreated,
+  kChannelMessageResult_UserJoined,
+
+  // SendMessage
+  kChannelMessageResult_NotInChannel,
 
   kChannelMessageResult_Max
 };

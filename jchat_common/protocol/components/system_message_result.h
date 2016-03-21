@@ -14,9 +14,11 @@
 
 namespace jchat {
 enum SystemMessageResult : uint16_t {
+  // General
   kSystemMessageResult_Ok,
   kSystemMessageResult_Fail,
 
+  // Hello
   kSystemMessageResult_InvalidProtocolVersion,
 
   kSystemMessageResult_Max
