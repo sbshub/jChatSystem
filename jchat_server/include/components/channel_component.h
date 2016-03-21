@@ -13,12 +13,13 @@
 #include "chat_channel.h"
 #include "protocol/components/channel_message_result.h"
 #include "event.hpp"
+#include <memory>
 
 namespace jchat {
 class ChannelComponent : public ChatComponent {
 private:
   ChatServer *server_;
-  std::vector<ChatChannel *> channels_;
+  std::vector<std::shared_ptr<ChatChannel>> channels_;
   std::mutex channels_mutex_;
 
 public:

@@ -14,12 +14,13 @@
 #include "protocol/components/user_message_result.h"
 #include "event.hpp"
 #include <map>
+#include <memory>
 
 namespace jchat {
 class UserComponent : public ChatComponent {
 private:
   ChatServer *server_;
-  std::map<RemoteChatClient *, ChatUser *> users_;
+  std::map<RemoteChatClient *, std::shared_ptr<ChatUser>> users_;
   std::mutex users_mutex_;
 
 public:
@@ -43,7 +44,8 @@ public:
     TypedBuffer &buffer) override;
 
   // API functions
-  bool GetChatUser(RemoteChatClient &client, ChatUser *out_user);
+  bool GetChatUser(RemoteChatClient &client,
+    std::shared_ptr<ChatUser> &out_user);
 
   // API events
 
