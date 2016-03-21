@@ -18,7 +18,7 @@ UserComponent::UserComponent() {
 UserComponent::~UserComponent() {
   if (!users_.empty()) {
     for (auto pair : users_) {
-      delete pair.second;
+      pair.second.reset();
     }
     users_.clear();
   }
@@ -36,7 +36,7 @@ bool UserComponent::Shutdown() {
   users_mutex_.lock();
   if (!users_.empty()) {
     for (auto pair : users_) {
-      delete pair.second;
+      pair.second.reset();
     }
     users_.clear();
   }
@@ -54,7 +54,7 @@ bool UserComponent::OnStop() {
   users_mutex_.lock();
   if (!users_.empty()) {
     for (auto pair : users_) {
-      delete pair.second;
+      pair.second.reset();
     }
     users_.clear();
   }
@@ -66,7 +66,7 @@ bool UserComponent::OnStop() {
 void UserComponent::OnClientConnected(RemoteChatClient &client) {
   // Create a chat user class instance that we can use to store information
   // about the client
-  ChatUser *chat_user = new ChatUser();
+  std::shared_ptr<ChatUser> chat_user(new ChatUser());
 
   // Store the user
   users_mutex_.lock();
@@ -84,15 +84,12 @@ void UserComponent::OnClientConnected(RemoteChatClient &client) {
 void UserComponent::OnClientDisconnected(RemoteChatClient &client) {
   users_mutex_.lock();
 
-  // NOTE (CRITICAL): Depending on which component handler is called first
-  // this will delete the ChatUser object and then the ChannelComponent
-  // will not be able to use this object in order to notify other clients that
-  // the user has disconnected, unless we store a copy of ChatUser in
-  // ChannelComponent somehow and not use the same ChatUser object we use here.
-  ChatUser *user = users_[&client];
+  std::shared_ptr<ChatUser> &user = users_[&client];
+
+  // TODO: Do anything with the user that we need to
 
   // Delete user
-  delete user;
+  user.reset();
 
   users_.erase(&client);
   users_mutex_.unlock();
@@ -108,13 +105,14 @@ bool UserComponent::Handle(RemoteChatClient &client, uint16_t message_type,
   return false;
 }
 
-bool UserComponent::GetChatUser(RemoteChatClient &client, ChatUser *out_user) {
+bool UserComponent::GetChatUser(RemoteChatClient &client,
+  std::shared_ptr<ChatUser> &out_user) {
   users_mutex_.lock();
   if (users_.find(&client) == users_.end()) {
     users_mutex_.unlock();
     return false;
   } else {
-    user = users_[&client];
+    out_user = users_[&client];
     users_mutex_.unlock();
     return true;
   }

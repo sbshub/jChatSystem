@@ -20,7 +20,7 @@ ChannelComponent::ChannelComponent() {
 ChannelComponent::~ChannelComponent() {
   if (!channels_.empty()) {
     for (auto channel : channels_) {
-      delete channel;
+      channel.reset();
     }
     channels_.clear();
   }
@@ -38,7 +38,7 @@ bool ChannelComponent::Shutdown() {
   channels_mutex_.lock();
   if (!channels_.empty()) {
     for (auto channel : channels_) {
-      delete channel;
+      channel.reset();
     }
     channels_.clear();
   }
@@ -56,7 +56,7 @@ bool ChannelComponent::OnStop() {
   channels_mutex_.lock();
   if (!channels_.empty()) {
     for (auto channel : channels_) {
-      delete channel;
+      channel.reset();
     }
     channels_.clear();
   }
@@ -72,7 +72,10 @@ void ChannelComponent::OnClientConnected(RemoteChatClient &client) {
 void ChannelComponent::OnClientDisconnected(RemoteChatClient &client) {
   // TODO: Notify all clients in participating channels that the client has
   // disconnected
-  // NOTE: See note in UserComponent.cpp
+
+  // NOTE: We won't have access to the GetChatUser method in here, because by
+  // now it is removed already, but that should be fine, by sense, it shouldn't
+  // be available if the client is disconnecting anyways
 }
 
 ComponentType ChannelComponent::GetType() {
@@ -95,7 +98,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     }
 
     // Get the chat client
-    ChatUser *chat_user = 0;
+    std::shared_ptr<ChatUser> chat_user;
     if (!user_component->GetChatUser(client, chat_user)) {
       // Internal error, disconnect client
       return false;
@@ -122,7 +125,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     }
 
     // Check if the channel exists
-    Channel *chat_channel = 0;
+    std::shared_ptr<ChatChannel> chat_channel;
     channels_mutex_.lock();
     for (auto channel : channels_) {
       if (channel->Name == channel_name) {
@@ -132,16 +135,16 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     }
     channels_mutex_.unlock();
 
-    if (chat_channel == 0) {
+    if (!chat_channel) {
       // Create the channel and add the user to it
-      ChatChannel *chat_channel = new ChatChannel();
+      std::shared_ptr<ChatChannel> chat_channel(new ChatChannel());
       chat_channel->Name = channel_name;
       chat_channel->Operators[&client] = chat_user;
       chat_channel->Clients[&client] = chat_user;
 
       // Add the channel to the component
       channels_mutex_.lock();
-      channels_.push_back(chat_channel):
+      channels_.push_back(chat_channel);
       channels_mutex_.unlock();
 
       // Notify the client that the channel was created and that they are
@@ -157,7 +160,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     } else {
       // Add the user to the channel
       chat_channel->ClientsMutex.lock();
-      chat_channel->ClientsMutex[&client] = chat_user;
+      chat_channel->Clients[&client] = chat_user;
       chat_channel->ClientsMutex.unlock();
 
       // Notify the client that it joined the channel and give it a list of
