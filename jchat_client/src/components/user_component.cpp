@@ -21,7 +21,7 @@ UserComponent::~UserComponent() {
 
 bool UserComponent::Initialize(ChatClient &client) {
   client_ = &client;
-  user_ = std::make_shared(new ChatUser());
+  user_ = std::make_shared<ChatUser>();
 
   return true;
 }

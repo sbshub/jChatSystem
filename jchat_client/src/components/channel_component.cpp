@@ -18,8 +18,8 @@ ChannelComponent::ChannelComponent() {
 ChannelComponent::~ChannelComponent() {
   // Remove channels
   if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
+    for (auto &channel : channels_) {
+      channel.reset();
     }
     channels_.clear();
   }
@@ -35,8 +35,8 @@ bool ChannelComponent::Shutdown() {
 
   // Remove channels
   if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
+    for (auto &channel : channels_) {
+      channel.reset();
     }
     channels_.clear();
   }
@@ -52,8 +52,8 @@ void ChannelComponent::OnDisconnected() {
   // Remove channels
   channels_mutex_.lock();
   if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
+    for (auto &channel : channels_) {
+      channel.reset();
     }
     channels_.clear();
   }
