@@ -11,6 +11,9 @@
 
 #if defined(__linux__)
 #define OS_LINUX
+#elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__) \
+  || defined(__MINGW32__)
+#define OS_WIN
 #else
 #error "Unsupported platform!"
 #endif

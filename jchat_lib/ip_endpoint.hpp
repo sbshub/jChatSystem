@@ -11,9 +11,14 @@
 
 // Required libraries
 #include "platform.h"
+#if defined(OS_LINUX)
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
+#elif defined(OS_WIN)
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <WS2tcpip.h>
+#endif
 #include <string>
 #include <stdint.h>
 

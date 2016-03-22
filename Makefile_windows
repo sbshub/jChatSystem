@@ -1,13 +1,13 @@
-all: jchat_server jchat_client
+PLATFORM = $(shell uname)
 
-jchat_server:
-	make -f Makefile_server build
+all: build
 
-jchat_client:
-	make -f Makefile_client build
+build:
+	make -f Makefile_server_windows build
+	make -f Makefile_client_windows build
 
 clean:
-	rm -f build/jchat_server build/jchat_client
+	rm -f build/jchat_server.exe build/jchat_client.exe
 	find ./ -name \*.o -type f -delete
 
 test_server:
@@ -24,4 +24,4 @@ install:
 uninstall:
 	rm -rf bin
 
-.PHONY: all jchat_server jchat_client clean test_server test_client install uninstall
+.PHONY: all build clean test_server test_client install uninstall

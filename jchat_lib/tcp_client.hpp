@@ -16,9 +16,10 @@
 #include "ip_endpoint.hpp"
 #include <chrono>
 #include <thread>
+#if defined(OS_LINUX)
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -39,6 +40,11 @@ typedef int SOCKET;
 #define closesocket(socket_fd) close(socket_fd)
 #endif // __CLOSE_SOCKET__
 
+#elif defined(OS_WIN)
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
+#endif
+
 #ifndef JCHAT_TCP_CLIENT_BUFFER_SIZE
 #define JCHAT_TCP_CLIENT_BUFFER_SIZE 8192
 #endif // JCHAT_TCP_CLIENT_BUFFER_SIZE
@@ -57,6 +63,10 @@ class TcpClient {
   IPEndpoint remote_endpoint_;
   std::thread worker_thread_;
   std::vector<uint8_t> read_buffer_;
+
+#if defined(OS_WIN)
+	WSADATA wsa_data_;
+#endif
 
   void worker_loop() {
     fd_set socket_set;
@@ -78,7 +88,7 @@ class TcpClient {
 
       // Check if there was some operation completed on the client socket
       if (FD_ISSET(client_socket_, &socket_set)) {
-        uint32_t read_bytes = recv(client_socket_, read_buffer_.data(),
+        uint32_t read_bytes = recv(client_socket_, (char *)read_buffer_.data(),
           read_buffer_.size(), 0);
         bool disconnect_client = false;
         if (read_bytes > 0) {
@@ -107,6 +117,11 @@ public:
     remote_endpoint_(hostname, port), is_connected_(false),
     is_internal_(false) {
     read_buffer_.resize(JCHAT_TCP_CLIENT_BUFFER_SIZE);
+
+#if defined(OS_WIN)
+		// Initialize Winsock
+		WSAStartup(MAKEWORD(2, 2), &wsa_data_);
+#endif
 
     // Get remote address info
     addrinfo *result = nullptr;
@@ -139,11 +154,16 @@ public:
     is_connected_(true), is_internal_(true) {
     read_buffer_.resize(JCHAT_TCP_CLIENT_BUFFER_SIZE);
 
-    uint32_t flags = fcntl(client_socket, F_GETFL, 0);
-    if (flags != SOCKET_ERROR) {
-      flags |= O_NONBLOCK;
-      fcntl(client_socket, F_SETFL, flags);
-    }
+#if defined(OS_LINUX)
+		uint32_t flags = fcntl(client_socket, F_GETFL, 0);
+		if (flags != SOCKET_ERROR) {
+			flags |= O_NONBLOCK;
+			fcntl(client_socket, F_SETFL, flags);
+		}
+#elif defined(OS_WIN)
+		unsigned int blocking = TRUE;
+		ioctlsocket(client_socket, FIONBIO, &blocking);
+#endif
   }
 
   ~TcpClient() {
@@ -153,6 +173,10 @@ public:
         worker_thread_.join();
       }
       closesocket(client_socket_);
+#if defined(OS_WIN)
+			// Cleanup Winsock
+			WSACleanup();
+#endif
     }
   }
 
@@ -182,14 +206,19 @@ public:
     }
     client_endpoint_.SetSocketEndpoint(client_endpoint);
 
-    uint32_t flags = fcntl(client_socket_, F_GETFL, 0);
-    if (flags != SOCKET_ERROR) {
-      flags |= O_NONBLOCK;
-      if (fcntl(client_socket_, F_SETFL, flags) == SOCKET_ERROR) {
-        closesocket(client_socket_);
-        return false;
-      }
-    } else {
+#if defined(OS_LINUX)
+		uint32_t flags = fcntl(client_socket_, F_GETFL, 0);
+		if (flags != SOCKET_ERROR) {
+			flags |= O_NONBLOCK;
+			if (fcntl(client_socket_, F_SETFL, flags) == SOCKET_ERROR) {
+				closesocket(client_socket_);
+				return false;
+			}
+		} else {
+#elif defined(OS_WIN)
+		unsigned int blocking = TRUE;
+		if (ioctlsocket(client_socket_, FIONBIO, &blocking) == SOCKET_ERROR) {
+#endif
       closesocket(client_socket_);
       return false;
     }
@@ -221,7 +250,7 @@ public:
       return false;
     }
 
-    return send(client_socket_, buffer.GetBuffer(),
+    return send(client_socket_, (const char *)buffer.GetBuffer(),
       buffer.GetSize(), 0) != SOCKET_ERROR;
   }
 

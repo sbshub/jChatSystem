@@ -12,20 +12,6 @@
 // Required libraries
 #include "tcp_client.hpp"
 
-#ifndef __SOCKET__
-#define __SOCKET__
-typedef int SOCKET;
-#endif // __SOCKET__
-
-#ifndef SOCKET_ERROR
-#define SOCKET_ERROR -1
-#endif // SOCKET_ERROR
-
-#ifndef __CLOSE_SOCKET__
-#define __CLOSE_SOCKET__
-#define closesocket(socket_fd) close(socket_fd)
-#endif // __CLOSE_SOCKET__
-
 #ifndef JCHAT_TCP_SERVER_BACKLOG
 #define JCHAT_TCP_SERVER_BACKLOG 50
 #endif // JCHAT_TCP_SERVER_BACKLOG
@@ -40,6 +26,10 @@ class TcpServer {
   std::vector<TcpClient *> accepted_clients_;
   std::mutex accepted_clients_mutex_;
   std::thread worker_thread_;
+
+#if defined(OS_WIN)
+	WSADATA wsa_data_;
+#endif
 
   void worker_loop() {
     fd_set socket_set;
@@ -78,7 +68,11 @@ class TcpServer {
       // Check if a new connection is awaiting
       if (FD_ISSET(listen_socket_, &socket_set)) {
         sockaddr_in client_endpoint;
+#if defined(OS_LINUX)
         uint32_t client_endpoint_size = sizeof(client_endpoint);
+#elif defined(OS_WIN)
+        int32_t client_endpoint_size = sizeof(client_endpoint);
+#endif
         SOCKET client_socket = accept(listen_socket_,
           (sockaddr *)&client_endpoint, &client_endpoint_size);
         if (client_socket != SOCKET_ERROR) {
@@ -98,7 +92,7 @@ class TcpServer {
         tcp_client != accepted_clients_.end();) {
         if (FD_ISSET((*tcp_client)->client_socket_, &socket_set)) {
           uint32_t read_bytes = recv((*tcp_client)->client_socket_,
-            (*tcp_client)->read_buffer_.data(),
+            (char *)(*tcp_client)->read_buffer_.data(),
             (*tcp_client)->read_buffer_.size(), 0);
           bool disconnect_client = false;
           if (read_bytes > 0) {
@@ -130,6 +124,10 @@ public:
   TcpServer(const char *hostname, uint16_t port)
     : hostname_(hostname), port_(port), is_listening_(false),
     listen_socket_(0), listen_endpoint_("0.0.0.0", port) {
+#if defined(OS_WIN)
+		// Initialize Winsock
+		WSAStartup(MAKEWORD(2, 2), &wsa_data_);
+#endif
 
     // Get remote address info
     addrinfo *result = nullptr;
@@ -160,6 +158,11 @@ public:
       is_listening_ = false;
       worker_thread_.join();
       closesocket(listen_socket_);
+
+#if defined(OS_WIN)
+			// Cleanup Winsock
+			WSACleanup();
+#endif
     }
 
     if (!accepted_clients_.empty()) {
@@ -192,14 +195,19 @@ public:
       return false;
     }
 
-    uint32_t flags = fcntl(listen_socket_, F_GETFL, 0);
-    if (flags != SOCKET_ERROR) {
-      flags |= O_NONBLOCK;
-      if (fcntl(listen_socket_, F_SETFL, flags) == SOCKET_ERROR) {
-        closesocket(listen_socket_);
-        return false;
-      }
-    } else {
+#if defined(OS_LINUX)
+		uint32_t flags = fcntl(listen_socket_, F_GETFL, 0);
+		if (flags != SOCKET_ERROR) {
+			flags |= O_NONBLOCK;
+			if (fcntl(listen_socket_, F_SETFL, flags) == SOCKET_ERROR) {
+				closesocket(listen_socket_);
+				return false;
+			}
+		} else {
+#elif defined(OS_WIN)
+		unsigned int blocking = TRUE;
+		if (ioctlsocket(listen_socket_, FIONBIO, &blocking) == SOCKET_ERROR) {
+#endif
       closesocket(listen_socket_);
       return false;
     }
@@ -256,7 +264,7 @@ public:
       return false;
     }
 
-    return send(tcp_client.client_socket_, buffer.GetBuffer(),
+    return send(tcp_client.client_socket_, (const char *)buffer.GetBuffer(),
       buffer.GetSize(), 0) != SOCKET_ERROR;
   }
 
