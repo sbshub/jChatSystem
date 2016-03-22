@@ -76,6 +76,7 @@ void ChannelComponent::OnClientDisconnected(RemoteChatClient &client) {
   // NOTE: We won't have access to the GetChatUser method in here, because by
   // now it is removed already, but that should be fine, by sense, it shouldn't
   // be available if the client is disconnecting anyways
+  
 }
 
 ComponentType ChannelComponent::GetType() {

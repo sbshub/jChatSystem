@@ -13,7 +13,6 @@
 #include "chat_channel.h"
 #include "protocol/components/channel_message_result.h"
 #include "event.hpp"
-#include <memory>
 
 namespace jchat {
 class ChannelComponent : public ChatComponent {

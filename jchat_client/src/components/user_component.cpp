@@ -16,25 +16,19 @@ UserComponent::UserComponent() {
 }
 
 UserComponent::~UserComponent() {
-  if (user_ != 0) {
-    delete user_;
-    user_ = 0;
-  }
+  user_.reset();
 }
 
 bool UserComponent::Initialize(ChatClient &client) {
   client_ = &client;
-  user_ = new ChatUser();
+  user_ = std::make_shared(new ChatUser());
 
   return true;
 }
 
 bool UserComponent::Shutdown() {
   client_ = 0;
-  if (user_ != 0) {
-    delete user_;
-    user_ = 0;
-  }
+  user_.reset();
 
   return true;
 }

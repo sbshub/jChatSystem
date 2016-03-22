@@ -18,7 +18,7 @@ namespace jchat {
 class ChannelComponent : public ChatComponent {
 private:
   ChatClient *client_;
-  std::vector<ChatChannel *> channels_;
+  std::vector<std::shared_ptr<ChatChannel>> channels_;
   std::mutex channels_mutex_;
 
 public:

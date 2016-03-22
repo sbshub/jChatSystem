@@ -65,7 +65,11 @@ ComponentType ChannelComponent::GetType() {
 }
 
 bool ChannelComponent::Handle(uint16_t message_type, TypedBuffer &buffer) {
-  //if (message_type == )
+  if (message_type == kChannelMessageType_JoinChannel_Complete) {
+    // TODO: 
+
+    return true;
+  }
 
   return false;
 }
