@@ -43,6 +43,14 @@ typedef int SOCKET;
 #elif defined(OS_WIN)
 #define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>
+
+// Platform/Compiler patches
+#if defined(__CYGWIN__) || defined(__MINGW32__)
+#if defined(FIONBIO)
+#undef FIONBIO
+#define FIONBIO 0x8004667E
+#endif
+#endif
 #endif
 
 #ifndef JCHAT_TCP_CLIENT_BUFFER_SIZE
@@ -161,7 +169,7 @@ public:
 			fcntl(client_socket, F_SETFL, flags);
 		}
 #elif defined(OS_WIN)
-		unsigned int blocking = TRUE;
+		unsigned int blocking = 1;
 		ioctlsocket(client_socket, FIONBIO, &blocking);
 #endif
   }
@@ -216,7 +224,7 @@ public:
 			}
 		} else {
 #elif defined(OS_WIN)
-		unsigned int blocking = TRUE;
+		unsigned int blocking = 1;
 		if (ioctlsocket(client_socket_, FIONBIO, &blocking) == SOCKET_ERROR) {
 #endif
       closesocket(client_socket_);

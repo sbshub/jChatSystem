@@ -12,9 +12,6 @@
 // Required libraries
 #include "tcp_client.hpp"
 
-// NOTE: Debug!
-#include <iostream>
-
 #ifndef JCHAT_TCP_SERVER_BACKLOG
 #define JCHAT_TCP_SERVER_BACKLOG 50
 #endif // JCHAT_TCP_SERVER_BACKLOG
@@ -189,7 +186,6 @@ public:
     sockaddr_in listen_endpoint = listen_endpoint_.GetSocketEndpoint();
     if (bind(listen_socket_, (const sockaddr *)&listen_endpoint,
       sizeof(listen_endpoint)) == SOCKET_ERROR) {
-	  std::cout << "Failed to bind!" << std::endl;
       closesocket(listen_socket_);
       return false;
     }
@@ -209,7 +205,7 @@ public:
 			}
 		} else {
 #elif defined(OS_WIN)
-		unsigned int blocking = TRUE;
+		unsigned int blocking = 1;
 		if (ioctlsocket(listen_socket_, FIONBIO, &blocking) == SOCKET_ERROR) {
 #endif
       closesocket(listen_socket_);
