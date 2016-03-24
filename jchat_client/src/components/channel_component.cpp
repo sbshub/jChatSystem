@@ -18,9 +18,6 @@ ChannelComponent::ChannelComponent() {
 ChannelComponent::~ChannelComponent() {
   // Remove channels
   if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
-    }
     channels_.clear();
   }
 }
@@ -35,9 +32,6 @@ bool ChannelComponent::Shutdown() {
 
   // Remove channels
   if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
-    }
     channels_.clear();
   }
 
@@ -52,9 +46,6 @@ void ChannelComponent::OnDisconnected() {
   // Remove channels
   channels_mutex_.lock();
   if (!channels_.empty()) {
-    for (auto channel : channels_) {
-      delete channel;
-    }
     channels_.clear();
   }
   channels_mutex_.unlock();
@@ -66,7 +57,7 @@ ComponentType ChannelComponent::GetType() {
 
 bool ChannelComponent::Handle(uint16_t message_type, TypedBuffer &buffer) {
   if (message_type == kChannelMessageType_JoinChannel_Complete) {
-    // TODO: 
+    // TODO:
 
     return true;
   }

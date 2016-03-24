@@ -20,9 +20,11 @@ enum ChannelMessageResult : uint16_t {
 
   kChannelMessageResult_NotIdentified,
   kChannelMessageResult_InvalidChannelName,
+  kChannelMessageResult_NotInChannel,
 
   // JoinChannel
   kChannelMessageResult_ChannelCreated,
+  kChannelMessageResult_AlreadyInChannel,
   kChannelMessageResult_UserJoined,
 
   // LeaveChannel
@@ -31,7 +33,7 @@ enum ChannelMessageResult : uint16_t {
 
 
   // SendMessage
-  kChannelMessageResult_NotInChannel,
+
 
   kChannelMessageResult_Max
 };

@@ -17,9 +17,6 @@ UserComponent::UserComponent() {
 
 UserComponent::~UserComponent() {
   if (!users_.empty()) {
-    for (auto pair : users_) {
-      pair.second.reset();
-    }
     users_.clear();
   }
 }
@@ -35,9 +32,6 @@ bool UserComponent::Shutdown() {
   // Remove users
   users_mutex_.lock();
   if (!users_.empty()) {
-    for (auto pair : users_) {
-      pair.second.reset();
-    }
     users_.clear();
   }
   users_mutex_.unlock();
@@ -53,9 +47,6 @@ bool UserComponent::OnStop() {
   // Remove users
   users_mutex_.lock();
   if (!users_.empty()) {
-    for (auto pair : users_) {
-      pair.second.reset();
-    }
     users_.clear();
   }
   users_mutex_.unlock();
@@ -89,8 +80,6 @@ void UserComponent::OnClientDisconnected(RemoteChatClient &client) {
   // TODO: Do anything with the user that we need to
 
   // Delete user
-  user.reset();
-
   users_.erase(&client);
   users_mutex_.unlock();
 }
