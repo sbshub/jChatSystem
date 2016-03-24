@@ -70,13 +70,45 @@ void ChannelComponent::OnClientConnected(RemoteChatClient &client) {
 }
 
 void ChannelComponent::OnClientDisconnected(RemoteChatClient &client) {
-  // TODO: Notify all clients in participating channels that the client has
+  // Notify all clients in participating channels that the client has
   // disconnected
+  channels_mutex_.lock();
+  for (auto &channel = channels_.begin(); channel != channels_.end();
+    ++channel) {
+    if (channel->Enabled) {
+      channel->ClientsMutex.lock();
+      if (channel->Clients.find(&client) != channel->Clients.end()) {
+        // Notify all clients in that channel that the client disconnected
+        TypedBuffer clients_buffer = server_->CreateBuffer();
+        clients_buffer.WriteUInt16(kChannelMessageResult_UserLeft);
+        clients_buffer.WriteString(chat_user->Username);
+        clients_buffer.WriteString(chat_user->Hostname);
 
-  // NOTE: We won't have access to the GetChatUser method in here, because by
-  // now it is removed already, but that should be fine, by sense, it shouldn't
-  // be available if the client is disconnecting anyways
-  
+        for (auto pair : channel->Clients) {
+          if (pair.second->Enabled) {
+            server_->SendUnicast(pair.first, kComponentType_Channel,
+              kChannelMessageType_LeaveChannel, clients_buffer);
+          }
+        }
+
+        // If there was nobody in the channel delete it
+        if (channel->Clients.empty()) {
+          channel->Enabled = false;
+          channel.reset();
+        }
+
+        // TODO/NOTE: We should try to remove all references of that client
+        // in all channels and maps/vectors... 
+
+        // TODO: Since we have access to the ChatUser class here we need to
+        // trigger the OnChannelLeft event
+
+        // TODO: Handle these packets on the client side
+      }
+      channel->ClientsMutex.unlock();
+    }
+  }
+  channels_mutex_.unlock();
 }
 
 ComponentType ChannelComponent::GetType() {
@@ -129,7 +161,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     std::shared_ptr<ChatChannel> chat_channel;
     channels_mutex_.lock();
     for (auto channel : channels_) {
-      if (channel->Name == channel_name) {
+      if (channel->Enabled && channel->Name == channel_name) {
         chat_channel = channel;
         break;
       }
@@ -138,7 +170,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
 
     if (!chat_channel) {
       // Create the channel and add the user to it
-      std::shared_ptr<ChatChannel> chat_channel(new ChatChannel());
+      auto chat_channel = std::make_shared(new ChatChannel());
       chat_channel->Name = channel_name;
       chat_channel->Operators[&client] = chat_user;
       chat_channel->Clients[&client] = chat_user;
@@ -172,16 +204,20 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       chat_channel->OperatorsMutex.lock();
       client_buffer.WriteUInt32(chat_channel->Operators.size());
       for (auto &pair : chat_channel->Operators) {
-        client_buffer.WriteString(pair.second->Username);
-        client_buffer.WriteString(pair.second->Hostname);
+        if (pair.second->Enabled) {
+          client_buffer.WriteString(pair.second->Username);
+          client_buffer.WriteString(pair.second->Hostname);
+        }
       }
       chat_channel->OperatorsMutex.unlock();
 
       chat_channel->ClientsMutex.lock();
       client_buffer.WriteUInt32(chat_channel->Clients.size());
       for (auto &pair : chat_channel->Clients) {
-        client_buffer.WriteString(pair.second->Username);
-        client_buffer.WriteString(pair.second->Hostname);
+        if (pair.second->Enabled) {
+          client_buffer.WriteString(pair.second->Username);
+          client_buffer.WriteString(pair.second->Hostname);
+        }
       }
       chat_channel->ClientsMutex.unlock();
       server_->SendUnicast(client, kComponentType_Channel,
@@ -195,8 +231,10 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
 
       chat_channel->ClientsMutex.lock();
       for (auto &pair : chat_channel->Clients) {
-        server_->SendUnicast(pair.first, kComponentType_Channel,
-          kChannelMessageType_JoinChannel, clients_buffer);
+        if (pair.second->Enabled) {
+          server_->SendUnicast(pair.first, kComponentType_Channel,
+            kChannelMessageType_JoinChannel, clients_buffer);
+        }
       }
       chat_channel->ClientsMutex.unlock();
 

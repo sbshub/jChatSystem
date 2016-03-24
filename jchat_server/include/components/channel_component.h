@@ -47,7 +47,7 @@ public:
   // API events
   Event<std::string &> OnChannelCreated;
   Event<ChatUser &> OnChannelJoined;
-
+  Event<ChatUser &> OnChannelLeft;
 };
 }
 

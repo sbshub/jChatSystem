@@ -66,7 +66,7 @@ bool UserComponent::OnStop() {
 void UserComponent::OnClientConnected(RemoteChatClient &client) {
   // Create a chat user class instance that we can use to store information
   // about the client
-  std::shared_ptr<ChatUser> chat_user(new ChatUser());
+  auto chat_user = std::make_shared(new ChatUser());
 
   // Store the user
   users_mutex_.lock();

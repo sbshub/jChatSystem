@@ -19,11 +19,16 @@ enum ChannelMessageResult : uint16_t {
   kChannelMessageResult_Fail,
 
   kChannelMessageResult_NotIdentified,
+  kChannelMessageResult_InvalidChannelName,
 
   // JoinChannel
-  kChannelMessageResult_InvalidChannelName,
   kChannelMessageResult_ChannelCreated,
   kChannelMessageResult_UserJoined,
+
+  // LeaveChannel
+  kChannelMessageResult_ChannelDestroyed,
+  kChannelMessageResult_UserLeft,
+
 
   // SendMessage
   kChannelMessageResult_NotInChannel,
