@@ -91,8 +91,10 @@ void ChannelComponent::OnClientDisconnected(RemoteChatClient &client) {
           channel.reset();
         }
 
+        // Trigger the events
         OnChannelLeft(*channel, *chat_user);
 
+        // Remove the client from the clients list
         channel->Clients.erase(&client);
       }
       channel->ClientsMutex.unlock();
@@ -191,10 +193,20 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       return true;
     }
 
-    // TODO/NOTE: Check if the user is already in the channel
+    // Check if the user is already in the channel
+    chat_channel->ClientsMutex.lock();
+    if (chat_channel->Clients.find(&client) != chat_channel.end()) {
+      chat_channel->ClientsMutex.unlock();
+
+      ypedBuffer send_buffer = server_->CreateBuffer();
+      send_buffer.WriteUInt16(kChannelMessageResult_AlreadyInChannel);
+      server_->SendUnicast(client, kComponentType_Channel,
+        kChannelMessageType_JoinChannel_Complete, send_buffer);
+
+      return true;
+    }
 
     // Add the user to the channel
-    chat_channel->ClientsMutex.lock();
     chat_channel->Clients[&client] = chat_user;
     chat_channel->ClientsMutex.unlock();
 
@@ -304,9 +316,62 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       return true;
     }
 
-    // TODO: Check if the user is already in the channel
+    // Check if the user is in the channel
+    channel->ClientsMutex.lock();
+    if (channel->Clients.find(&client) != channel->Clients.end()) {
+      // Get the chat user
+      ChatUser &chat_user = channel->Clients[&client];
 
+      // Notify all clients in that channel that the client left
+      TypedBuffer clients_buffer = server_->CreateBuffer();
+      clients_buffer.WriteUInt16(kChannelMessageResult_UserLeft);
+      clients_buffer.WriteString(chat_user->Username);
+      clients_buffer.WriteString(chat_user->Hostname);
 
+      for (auto pair : channel->Clients) {
+        if (pair.second->Enabled) {
+          server_->SendUnicast(pair.first, kComponentType_Channel,
+            kChannelMessageType_LeaveChannel, clients_buffer);
+        }
+      }
+
+      // If there was nobody in the channel delete it
+      if (channel->Clients.empty()) {
+        channel->Enabled = false;
+        channel.reset();
+      }
+
+      // Trigger the events
+      OnChannelLeft(*channel, *chat_user);
+
+      // Remove the client from the clients list
+      channel->Clients.erase(&client);
+    } else {
+      channel->ClientsMutex.unlock();
+
+      // Notify the client that they are not in the channel
+      TypedBuffer send_buffer = server_->CreateBuffer();
+      send_buffer.WriteUInt16(kChannelMessageResult_NotInChannel);
+      server_->SendUnicast(client, kComponentType_Channel,
+        kChannelMessageType_LeaveChannel_Complete, send_buffer);
+
+      return true;
+    }
+    channel->ClientsMutex.unlock();
+
+    // Remove the client from the operators list if they're an operator
+    channel->OperatorsMutex.lock();
+    if (channel->Operators.find(&client) != channel->Clients.end()) {
+      channel->Operators.erase(&client);
+    }
+    channel->OperatorsMutex.unlock();
+
+    // Notify the client that they left the channel
+    TypedBuffer send_buffer = server_->CreateBuffer();
+    send_buffer.WriteUInt16(kChannelMessageResult_Ok);
+    send_buffer.WriteString(channel_name);
+    server_->SendUnicast(client, kComponentType_Channel,
+      kChannelMessageType_LeaveChannel_Complete, send_buffer);
 
     return true;
   }
