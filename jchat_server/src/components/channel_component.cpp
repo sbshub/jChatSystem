@@ -64,13 +64,14 @@ void ChannelComponent::OnClientDisconnected(RemoteChatClient &client) {
   // Notify all clients in participating channels that the client has
   // disconnected
   channels_mutex_.lock();
-  for (auto &channel = channels_.begin(); channel != channels_.end();
-    ++channel) {
+  for (auto it = channels_.begin(); it != channels_.end(); ++it) {
+    std::shared_ptr<ChatChannel> channel = *it;
+
     if (channel->Enabled) {
       channel->ClientsMutex.lock();
       if (channel->Clients.find(&client) != channel->Clients.end()) {
         // Get the chat user
-        ChatUser &chat_user = channel->Clients[&client];
+        std::shared_ptr<ChatUser> chat_user = channel->Clients[&client];
 
         // Notify all clients in that channel that the client left
         TypedBuffer clients_buffer = server_->CreateBuffer();
@@ -78,17 +79,11 @@ void ChannelComponent::OnClientDisconnected(RemoteChatClient &client) {
         clients_buffer.WriteString(chat_user->Username);
         clients_buffer.WriteString(chat_user->Hostname);
 
-        for (auto pair : channel->Clients) {
+        for (auto &pair : channel->Clients) {
           if (pair.second->Enabled) {
             server_->SendUnicast(pair.first, kComponentType_Channel,
               kChannelMessageType_LeaveChannel, clients_buffer);
           }
-        }
-
-        // If there was nobody in the channel delete it
-        if (channel->Clients.empty()) {
-          channel->Enabled = false;
-          channel.reset();
         }
 
         // Trigger the events
@@ -96,6 +91,12 @@ void ChannelComponent::OnClientDisconnected(RemoteChatClient &client) {
 
         // Remove the client from the clients list
         channel->Clients.erase(&client);
+
+        // If there was nobody in the channel delete it
+        if (channel->Clients.empty()) {
+          channel->Enabled = false;
+          channel.reset();
+        }
       }
       channel->ClientsMutex.unlock();
 
@@ -159,7 +160,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     // Check if the channel exists
     std::shared_ptr<ChatChannel> chat_channel;
     channels_mutex_.lock();
-    for (auto channel : channels_) {
+    for (auto &channel : channels_) {
       if (channel->Enabled && channel->Name == channel_name) {
         chat_channel = channel;
         break;
@@ -169,7 +170,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
 
     if (!chat_channel) {
       // Create the channel and add the user to it
-      auto chat_channel = std::make_shared(new ChatChannel());
+      auto chat_channel = std::make_shared<ChatChannel>();
       chat_channel->Name = channel_name;
       chat_channel->Operators[&client] = chat_user;
       chat_channel->Clients[&client] = chat_user;
@@ -188,17 +189,17 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
 
       // Trigger the events
       OnChannelCreated(channel_name);
-      OnChannelJoined(*chat_user);
+      OnChannelJoined(*chat_channel, *chat_user);
 
       return true;
     }
 
     // Check if the user is already in the channel
     chat_channel->ClientsMutex.lock();
-    if (chat_channel->Clients.find(&client) != chat_channel.end()) {
+    if (chat_channel->Clients.find(&client) != chat_channel->Clients.end()) {
       chat_channel->ClientsMutex.unlock();
 
-      ypedBuffer send_buffer = server_->CreateBuffer();
+      TypedBuffer send_buffer = server_->CreateBuffer();
       send_buffer.WriteUInt16(kChannelMessageResult_AlreadyInChannel);
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_JoinChannel_Complete, send_buffer);
@@ -299,7 +300,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     // Check if the channel exists
     std::shared_ptr<ChatChannel> chat_channel;
     channels_mutex_.lock();
-    for (auto channel : channels_) {
+    for (auto &channel : channels_) {
       if (channel->Enabled && channel->Name == channel_name) {
         chat_channel = channel;
         break;
@@ -317,37 +318,34 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     }
 
     // Check if the user is in the channel
-    channel->ClientsMutex.lock();
-    if (channel->Clients.find(&client) != channel->Clients.end()) {
-      // Get the chat user
-      ChatUser &chat_user = channel->Clients[&client];
-
+    chat_channel->ClientsMutex.lock();
+    if (chat_channel->Clients.find(&client) != chat_channel->Clients.end()) {
       // Notify all clients in that channel that the client left
       TypedBuffer clients_buffer = server_->CreateBuffer();
       clients_buffer.WriteUInt16(kChannelMessageResult_UserLeft);
       clients_buffer.WriteString(chat_user->Username);
       clients_buffer.WriteString(chat_user->Hostname);
 
-      for (auto pair : channel->Clients) {
+      for (auto &pair : chat_channel->Clients) {
         if (pair.second->Enabled) {
           server_->SendUnicast(pair.first, kComponentType_Channel,
             kChannelMessageType_LeaveChannel, clients_buffer);
         }
       }
 
-      // If there was nobody in the channel delete it
-      if (channel->Clients.empty()) {
-        channel->Enabled = false;
-        channel.reset();
-      }
-
       // Trigger the events
-      OnChannelLeft(*channel, *chat_user);
+      OnChannelLeft(*chat_channel, *chat_user);
 
       // Remove the client from the clients list
-      channel->Clients.erase(&client);
+      chat_channel->Clients.erase(&client);
+
+      // If there was nobody in the channel delete it
+      if (chat_channel->Clients.empty()) {
+        chat_channel->Enabled = false;
+        chat_channel.reset();
+      }
     } else {
-      channel->ClientsMutex.unlock();
+      chat_channel->ClientsMutex.unlock();
 
       // Notify the client that they are not in the channel
       TypedBuffer send_buffer = server_->CreateBuffer();
@@ -357,14 +355,14 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
 
       return true;
     }
-    channel->ClientsMutex.unlock();
+    chat_channel->ClientsMutex.unlock();
 
     // Remove the client from the operators list if they're an operator
-    channel->OperatorsMutex.lock();
-    if (channel->Operators.find(&client) != channel->Clients.end()) {
-      channel->Operators.erase(&client);
+    chat_channel->OperatorsMutex.lock();
+    if (chat_channel->Operators.find(&client) != chat_channel->Clients.end()) {
+      chat_channel->Operators.erase(&client);
     }
-    channel->OperatorsMutex.unlock();
+    chat_channel->OperatorsMutex.unlock();
 
     // Notify the client that they left the channel
     TypedBuffer send_buffer = server_->CreateBuffer();

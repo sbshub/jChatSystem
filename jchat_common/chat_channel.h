@@ -20,7 +20,7 @@ struct ChatChannel {
   // NOTE: This should be used when sending a message to the clients to see if
   // it is enabled, when the first client connects, this should be set to true,
   // and false when the last client disconnects
-  bool Enabled,
+  bool Enabled;
   std::string Name;
   std::map<RemoteChatClient *, std::shared_ptr<ChatUser>> Operators;
   std::mutex OperatorsMutex;
