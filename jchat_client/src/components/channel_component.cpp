@@ -18,6 +18,12 @@ ChannelComponent::ChannelComponent() {
 ChannelComponent::~ChannelComponent() {
   // Remove channels
   if (!channels_.empty()) {
+<<<<<<< HEAD
+=======
+    for (auto &channel : channels_) {
+      channel.reset();
+    }
+>>>>>>> 937ed99dbf3eaa0e46dd46cfebef95082aa0559a
     channels_.clear();
   }
 }
@@ -32,6 +38,12 @@ bool ChannelComponent::Shutdown() {
 
   // Remove channels
   if (!channels_.empty()) {
+<<<<<<< HEAD
+=======
+    for (auto &channel : channels_) {
+      channel.reset();
+    }
+>>>>>>> 937ed99dbf3eaa0e46dd46cfebef95082aa0559a
     channels_.clear();
   }
 
@@ -46,6 +58,12 @@ void ChannelComponent::OnDisconnected() {
   // Remove channels
   channels_mutex_.lock();
   if (!channels_.empty()) {
+<<<<<<< HEAD
+=======
+    for (auto &channel : channels_) {
+      channel.reset();
+    }
+>>>>>>> 937ed99dbf3eaa0e46dd46cfebef95082aa0559a
     channels_.clear();
   }
   channels_mutex_.unlock();

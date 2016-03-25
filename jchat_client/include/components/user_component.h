@@ -13,6 +13,7 @@
 #include "chat_user.h"
 #include "protocol/components/user_message_result.h"
 #include "event.hpp"
+#include <memory>
 #include <map>
 
 namespace jchat {
@@ -21,7 +22,7 @@ private:
   ChatClient *client_;
 
   // NOTE: This is the local user
-  std::pair<RemoteChatClient, std::shared_ptr<ChatUser>> user_;
+  std::shared_ptr<ChatUser> user_;
 
   // NOTE: This is the remote users
   // TODO: Clear these when shutting down or disconnecting

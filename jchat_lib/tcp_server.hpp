@@ -205,7 +205,7 @@ public:
 			}
 		} else {
 #elif defined(OS_WIN)
-		unsigned int blocking = TRUE;
+		unsigned int blocking = 1;
 		if (ioctlsocket(listen_socket_, FIONBIO, &blocking) == SOCKET_ERROR) {
 #endif
       closesocket(listen_socket_);

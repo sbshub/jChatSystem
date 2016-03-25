@@ -305,7 +305,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     }
 
     // TODO: Check if the user is already in the channel
-    
+
+
 
     return true;
   }
