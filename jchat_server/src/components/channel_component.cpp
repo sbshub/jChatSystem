@@ -296,7 +296,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     channels_mutex_.unlock();
 
     if (!chat_channel) {
-      TypedBuffer send_ buffer = server_->CreateBuffer();
+      TypedBuffer send_buffer = server_->CreateBuffer();
       send_buffer.WriteUInt16(kChannelMessageResult_InvalidChannelName);
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_LeaveChannel_Complete, send_buffer);
