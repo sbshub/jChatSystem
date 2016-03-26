@@ -6,7 +6,7 @@ jChatSystem is a TCP network based chat system, using clients and a server. It i
 
 NOTE: Make sure you have git, g++, and make installed on your system.
 
-1. Download, or clone repository using `git clone https://github.com/Imposter/jChatSystem/`
+1. Download, or clone repository using `git clone https://github.com/Imposter/jChatSystem.git`
 2. Use `make -f [Makefile_linux|Makefile_windows] [all|clean|install|uninstall]` to complete the desired operation.  
   * `all` - Cleans and then builds the chat server and client
   * `clean` - Cleans the project directories
