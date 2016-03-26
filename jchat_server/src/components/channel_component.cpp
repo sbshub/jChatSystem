@@ -144,6 +144,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_JoinChannel_Complete, send_buffer);
 
+      OnJoinCompleted(kChannelMessageResult_NotIdentified, *chat_user);
+
       return true;
     }
 
@@ -153,6 +155,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       send_buffer.WriteUInt16(kChannelMessageResult_InvalidChannelName);
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_JoinChannel_Complete, send_buffer);
+
+      OnJoinCompleted(kChannelMessageResult_InvalidChannelName, *chat_user);
 
       return true;
     }
@@ -187,8 +191,10 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_JoinChannel_Complete, send_buffer);
 
+      OnJoinCompleted(kChannelMessageResult_ChannelCreated, *chat_user);
+
       // Trigger the events
-      OnChannelCreated(channel_name);
+      OnChannelCreated(*chat_channel);
       OnChannelJoined(*chat_channel, *chat_user);
 
       return true;
@@ -203,6 +209,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       send_buffer.WriteUInt16(kChannelMessageResult_AlreadyInChannel);
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_JoinChannel_Complete, send_buffer);
+
+      OnJoinCompleted(kChannelMessageResult_AlreadyInChannel, *chat_user);
 
       return true;
     }
@@ -254,6 +262,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     chat_channel->ClientsMutex.unlock();
 
     // Trigger the events
+    OnJoinCompleted(kChannelMessageResult_Ok, *chat_user);
     OnChannelJoined(*chat_channel, *chat_user);
 
     return true;
@@ -284,6 +293,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_LeaveChannel_Complete, send_buffer);
 
+      OnLeaveCompleted(kChannelMessageResult_NotIdentified, *chat_user);
+
       return true;
     }
 
@@ -293,6 +304,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       send_buffer.WriteUInt16(kChannelMessageResult_InvalidChannelName);
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_LeaveChannel_Complete, send_buffer);
+
+      OnLeaveCompleted(kChannelMessageResult_InvalidChannelName, *chat_user);
 
       return true;
     }
@@ -314,6 +327,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_LeaveChannel_Complete, send_buffer);
 
+      OnLeaveCompleted(kChannelMessageResult_InvalidChannelName, *chat_user);
+
       return true;
     }
 
@@ -333,7 +348,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
         }
       }
 
-      // Trigger the events
+      // Trigger the events;
       OnChannelLeft(*chat_channel, *chat_user);
 
       // Remove the client from the clients list
@@ -353,6 +368,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       server_->SendUnicast(client, kComponentType_Channel,
         kChannelMessageType_LeaveChannel_Complete, send_buffer);
 
+      OnLeaveCompleted(kChannelMessageResult_NotInChannel, *chat_user);
+
       return true;
     }
     chat_channel->ClientsMutex.unlock();
@@ -370,6 +387,8 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     send_buffer.WriteString(channel_name);
     server_->SendUnicast(client, kComponentType_Channel,
       kChannelMessageType_LeaveChannel_Complete, send_buffer);
+
+    OnLeaveCompleted(kChannelMessageResult_Ok, *chat_user);
 
     return true;
   }

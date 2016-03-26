@@ -38,10 +38,16 @@ public:
   virtual bool Handle(uint16_t message_type, TypedBuffer &buffer) override;
 
   // API functions
-
+  bool JoinChannel(std::string channel_name);
+  bool LeaveChannel(std::string channel_name);
 
   // API events
+  Event<ChannelMessageResult> OnJoinCompleted;
+  Event<ChannelMessageResult> OnLeaveCompleted;
 
+  Event<ChatChannel &> OnChannelCreated;
+  Event<ChatChannel &, ChatUser &> OnChannelJoined;
+  Event<ChatChannel &, ChatUser &> OnChannelLeft;
 };
 }
 

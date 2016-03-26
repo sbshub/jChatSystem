@@ -57,11 +57,39 @@ ComponentType ChannelComponent::GetType() {
 
 bool ChannelComponent::Handle(uint16_t message_type, TypedBuffer &buffer) {
   if (message_type == kChannelMessageType_JoinChannel_Complete) {
-    // TODO:
+    uint16_t message_result = 0;
+    if (!buffer.ReadUInt16(message_result)) {
+      return false;
+    }
+    OnJoinCompleted(static_cast<ChannelMessageResult>(message_result));
+    if (message_result != kChannelMessageResult_Ok) {
+      return true;
+    }
+
+    // TODO: Create the ChatChannel and do necessary actions
+
+    return true;
+  } else if (message_type == kChannelMessageType_LeaveChannel_Complete_) {
+    // TODO: Write
+
 
     return true;
   }
 
   return false;
+}
+
+bool ChannelComponent::JoinChannel(std::string channel_name) {
+  TypedBuffer buffer = client_->CreateBuffer();
+  buffer.WriteString(channel_name);
+  return client_->Send(kComponentType_Channel, kChannelMessageType_JoinChannel,
+    buffer);
+}
+
+bool ChannelComponent::LeaveChannel(std::string channel_name) {
+  TypedBuffer buffer = client_->CreateBuffer();
+  buffer.WriteString(channel_name);
+  return client_->Send(kComponentType_Channel, kChannelMessageType_LeaveChannel,
+    buffer);
 }
 }
