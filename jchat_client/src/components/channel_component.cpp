@@ -69,7 +69,7 @@ bool ChannelComponent::Handle(uint16_t message_type, TypedBuffer &buffer) {
     // TODO: Create the ChatChannel and do necessary actions
 
     return true;
-  } else if (message_type == kChannelMessageType_LeaveChannel_Complete_) {
+  } else if (message_type == kChannelMessageType_LeaveChannel_Complete) {
     // TODO: Write
 
 
