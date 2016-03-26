@@ -10,6 +10,7 @@
 #include "chat_server.h"
 #include "protocol/version.h"
 #include "protocol/components/user_message_type.h"
+#include "utility.hpp"
 
 namespace jchat {
 UserComponent::UserComponent() {
@@ -66,7 +67,8 @@ void UserComponent::OnClientConnected(RemoteChatClient &client) {
 
   // Give the client a guest username (which will prevent it from accessing
   // anything until it has authenticated)
-  chat_user->Username = "guest";
+  chat_user->Username = "guest-" + std::to_string(Utility::Random(100000,
+    999999));
 
   // Set the IP address as the endpoint until the client authenticates
   chat_user->Hostname = client.Endpoint.GetAddressString();

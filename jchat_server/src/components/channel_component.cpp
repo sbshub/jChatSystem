@@ -348,7 +348,7 @@ bool ChannelComponent::Handle(RemoteChatClient &client, uint16_t message_type,
         }
       }
 
-      // Trigger the events;
+      // Trigger the events
       OnChannelLeft(*chat_channel, *chat_user);
 
       // Remove the client from the clients list
