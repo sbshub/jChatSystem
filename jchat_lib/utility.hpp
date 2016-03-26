@@ -12,17 +12,22 @@
 // Required libraries
 #include <cstdlib>
 #include <ctime>
+#include <mutex>
 
 namespace jchat {
 class Utility {
 public:
   static uint32_t Random(uint32_t min, uint32_t max) {
     static bool seeded = false;
+    static std::mutex mutex;
+    mutex.lock();
     if (!seeded) {
       srand(time(0));
       seeded = true;
     }
-    return (rand() % (max - min + 1)) + min;
+    uint32_t random = (rand() % (max - min + 1)) + min;
+    mutex.unlock();
+    return random;
   }
 };
 }
