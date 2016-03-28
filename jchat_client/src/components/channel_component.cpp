@@ -70,8 +70,16 @@ bool ChannelComponent::Handle(uint16_t message_type, TypedBuffer &buffer) {
 
     return true;
   } else if (message_type == kChannelMessageType_LeaveChannel_Complete) {
-    // TODO: Write
+    uint16_t message_result = 0;
+    if (!buffer.ReadUInt16(message_result)) {
+      return false;
+    }
+    OnLeaveCompleted(static_cast<ChannelMessageResult>(message_result));
+    if (message_result != kChannelMessageResult_Ok) {
+      return true;
+    }
 
+    // TODO: Remove the ChatChannel and do necessary actions
 
     return true;
   }
