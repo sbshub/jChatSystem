@@ -11,6 +11,7 @@
 #include "protocol/version.h"
 #include "protocol/components/user_message_type.h"
 #include "utility.hpp"
+#include "string.hpp"
 
 namespace jchat {
 UserComponent::UserComponent() {
@@ -79,8 +80,11 @@ void UserComponent::OnClientDisconnected(RemoteChatClient &client) {
 
   std::shared_ptr<ChatUser> &user = users_[&client];
 
-  // TODO: Do anything with the user that we need to
 
+  if(user->Enabled){
+    TypedBuffer users_buffer = server_->CreateBuffer();
+    users_buffer.WriteUInt16(kUserMessageResult_Ok);
+  }
   // Delete user
   users_.erase(&client);
   users_mutex_.unlock();
@@ -92,7 +96,34 @@ ComponentType UserComponent::GetType() {
 
 bool UserComponent::Handle(RemoteChatClient &client, uint16_t message_type,
   TypedBuffer &buffer) {
+   // Reads in the username 
+  if (message_type == kUserMessageType_Identify) {
+    std::string user_name;
+    if (!buffer.ReadString(user_name)) {
+      return true;
+    }
+   
+    if (!String::Contains(user_name, "#")) {
+      TypedBuffer send_buffer = server_->CreateBuffer(); // Not sure if to use server here or not, let me know 
+      buffer.WriteUInt16(kUserMessageResult_InvalidUsername);
+      server_->SendUnicast(client, kComponentType_User,
+      kUserMessageType_Complete_Identify, send_buffer);
+      return true;
+    } else if (String::Contains(user_name, "#")) {
+      return false;
+    }
 
+    if (message_type == kUserMessageType_Max){
+      if(user_name.length() > 20){
+        return false;
+      }
+      buffer.WriteUInt16(kUserMessageResult_Max);
+      return true;
+    }
+    if(message_type != kUserMessageResult_Ok){
+      return true;
+    }
+  } 
   return false;
 }
 
