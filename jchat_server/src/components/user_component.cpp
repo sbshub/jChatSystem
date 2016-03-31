@@ -80,8 +80,11 @@ void UserComponent::OnClientDisconnected(RemoteChatClient &client) {
 
   std::shared_ptr<ChatUser> &user = users_[&client];
 
-  // TODO: Do anything with the user that we need to
 
+  if(user->Enabled){
+    TypedBuffer users_buffer = server_->CreateBuffer();
+    users_buffer.WriteUInt16(kUserMessageResult_Ok);
+  }
   // Delete user
   users_.erase(&client);
   users_mutex_.unlock();
@@ -101,7 +104,7 @@ bool UserComponent::Handle(RemoteChatClient &client, uint16_t message_type,
     }
    
     if (!String::Contains(user_name, "#")) {
-      TypedBuffer send_buffer = server_->CreateBuffer(); // Not sure if to user server here or not, let me know 
+      TypedBuffer send_buffer = server_->CreateBuffer(); // Not sure if to use server here or not, let me know 
       buffer.WriteUInt16(kUserMessageResult_InvalidUsername);
       server_->SendUnicast(client, kComponentType_User,
       kUserMessageType_Complete_Identify, send_buffer);
@@ -115,6 +118,9 @@ bool UserComponent::Handle(RemoteChatClient &client, uint16_t message_type,
         return false;
       }
       buffer.WriteUInt16(kUserMessageResult_Max);
+      return true;
+    }
+    if(message_type != kUserMessageResult_Ok){
       return true;
     }
   } 
