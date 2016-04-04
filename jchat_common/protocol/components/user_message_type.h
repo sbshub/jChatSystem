@@ -15,7 +15,9 @@
 namespace jchat {
 enum UserMessageType : uint16_t {
   kUserMessageType_Identify,
-  kUserMessageType_Complete_Identify,
+  kUserMessageType_Identify_Complete,
+  kUserMessageType_SendMessage,
+  kUserMessageType_SendMessage_Complete,
   kUserMessageType_Max,
 };
 }

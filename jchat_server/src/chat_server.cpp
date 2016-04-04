@@ -45,11 +45,9 @@ bool ChatServer::Start() {
     return false;
   }
 
-  components_mutex_.lock();
   for (auto component : components_) {
     component->OnStart();
   }
-  components_mutex_.unlock();
 
   is_listening_ = true;
 
@@ -76,63 +74,59 @@ bool ChatServer::Stop() {
   }
   clients_mutex_.unlock();
 
-  components_mutex_.lock();
   for (auto component : components_) {
     component->OnStop();
   }
-  components_mutex_.unlock();
 
   is_listening_ = false;
 
   return true;
 }
 
-bool ChatServer::AddComponent(ChatComponent *component) {
-  components_mutex_.lock();
+bool ChatServer::AddComponent(std::shared_ptr<ChatComponent> component) {
+  if (is_listening_) {
+    return false;
+  }
+
   for (auto it = components_.begin(); it != components_.end(); ++it) {
     if (*it == component) {
-      components_mutex_.unlock();
       return false;
     }
   }
   if (!component->Initialize(*this)) {
-    components_mutex_.unlock();
     return false;
   }
   components_.push_back(component);
-  components_mutex_.unlock();
 
   return true;
 }
 
-bool ChatServer::RemoveComponent(ChatComponent *component) {
-  components_mutex_.lock();
+bool ChatServer::RemoveComponent(std::shared_ptr<ChatComponent> component) {
+  if (is_listening_) {
+    return false;
+  }
+
   for (auto it = components_.begin(); it != components_.end(); ++it) {
     if (*it == component) {
       if (!component->Shutdown()) {
-        return false;
+		    return false;
       }
       components_.erase(it);
-      components_mutex_.unlock();
       return true;
     }
   }
-  components_mutex_.unlock();
 
   return false;
 }
 
 bool ChatServer::GetComponent(ComponentType component_type,
-  ChatComponent *out_component) {
-  components_mutex_.lock();
+  std::shared_ptr<ChatComponent> &out_component) {
   for (auto component : components_) {
     if (component->GetType() == component_type) {
-      components_mutex_.unlock();
       out_component = component;
       return true;
     }
   }
-  components_mutex_.unlock();
   return false;
 }
 
@@ -140,37 +134,22 @@ TypedBuffer ChatServer::CreateBuffer() {
     return TypedBuffer(!is_little_endian_);
 }
 
-bool ChatServer::SendUnicast(RemoteChatClient &client,
+bool ChatServer::Send(RemoteChatClient &client,
   ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
   TcpClient *tcp_client = NULL;
   if (!getTcpClient(client, &tcp_client)) {
     return false;
   }
-  return sendUnicast(*tcp_client, component_type, message_type, buffer);
+  return send(*tcp_client, component_type, message_type, buffer);
 }
 
-bool ChatServer::SendUnicast(RemoteChatClient *client,
+bool ChatServer::Send(RemoteChatClient *client,
   ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
   TcpClient *tcp_client = NULL;
   if (!getTcpClient(*client, &tcp_client)) {
     return false;
   }
-  return sendUnicast(*tcp_client, component_type, message_type, buffer);
-}
-
-bool ChatServer::SendMulticast(std::vector<RemoteChatClient *> clients,
-  ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
-  bool success = true;
-  for (auto client : clients) {
-    TcpClient *tcp_client = NULL;
-    if (!getTcpClient(*client, &tcp_client)) {
-      return false;
-    }
-    if (!sendUnicast(*tcp_client, component_type, message_type, buffer)) {
-      success = false;
-    }
-  }
-  return success;
+  return send(*tcp_client, component_type, message_type, buffer);
 }
 
 IPEndpoint ChatServer::GetListenEndpoint() {
@@ -184,11 +163,9 @@ bool ChatServer::onClientConnected(TcpClient &tcp_client) {
   // address and port)
   chat_client->Endpoint = tcp_client.GetRemoteEndpoint();
 
-  components_mutex_.lock();
   for (auto component : components_) {
     component->OnClientConnected(*chat_client);
   }
-  components_mutex_.unlock();
 
   clients_mutex_.lock();
   clients_[&tcp_client] = chat_client;
@@ -204,11 +181,9 @@ bool ChatServer::onClientDisconnected(TcpClient &tcp_client) {
   RemoteChatClient *chat_client = clients_[&tcp_client];
   clients_mutex_.unlock();
 
-  components_mutex_.lock();
   for (auto component : components_) {
     component->OnClientDisconnected(*chat_client);
   }
-  components_mutex_.unlock();
 
   // TODO/NOTE: We need to remove the client from any channels where they're in
   // or where they have operator or any privileges, and we can do this in the
@@ -264,7 +239,6 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
     RemoteChatClient *chat_client = clients_[&tcp_client];
     clients_mutex_.unlock();
 
-    components_mutex_.lock();
     for (auto component : components_) {
       if (component->GetType() == static_cast<ComponentType>(component_type)) {
         if (component->Handle(*chat_client, message_type, typed_buffer)) {
@@ -273,13 +247,13 @@ bool ChatServer::onDataReceived(TcpClient &tcp_client, Buffer &buffer) {
         }
       }
     }
-    components_mutex_.unlock();
   }
 
   return handled;
 }
 
-bool ChatServer::getTcpClient(RemoteChatClient &client, TcpClient **out_client) {
+bool ChatServer::getTcpClient(RemoteChatClient &client,
+  TcpClient **out_client) {
   clients_mutex_.lock();
   for (auto pair : clients_) {
     if (pair.second == &client) {
@@ -292,7 +266,7 @@ bool ChatServer::getTcpClient(RemoteChatClient &client, TcpClient **out_client) 
   return false;
 }
 
-bool ChatServer::sendUnicast(TcpClient &client, ComponentType component_type,
+bool ChatServer::send(TcpClient &client, ComponentType component_type,
   uint8_t message_type, TypedBuffer &buffer) {
   Buffer temp_buffer(!is_little_endian_);
 
@@ -307,19 +281,8 @@ bool ChatServer::sendUnicast(TcpClient &client, ComponentType component_type,
   return tcp_server_.Send(client, temp_buffer);
 }
 
-bool ChatServer::sendUnicast(TcpClient *client, ComponentType component_type,
+bool ChatServer::send(TcpClient *client, ComponentType component_type,
   uint8_t message_type, TypedBuffer &buffer) {
-  return sendUnicast(*client, component_type, message_type, buffer);
-}
-
-bool ChatServer::sendMulticast(std::vector<TcpClient *> clients,
-  ComponentType component_type, uint8_t message_type, TypedBuffer &buffer) {
-  bool success = true;
-  for (auto client : clients) {
-    if (!sendUnicast(client, component_type, message_type, buffer)) {
-      success = false;
-    }
-  }
-  return success;
+  return send(*client, component_type, message_type, buffer);
 }
 }

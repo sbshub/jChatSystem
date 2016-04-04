@@ -13,7 +13,7 @@
 #include "tcp_client.hpp"
 #include "chat_component.h"
 #include "chat_channel.h"
-#include "protocol/version.h"
+#include "protocol/protocol.h"
 #include "protocol/component_type.h"
 
 namespace jchat {
@@ -21,8 +21,7 @@ class ChatClient {
   bool is_connected_;
   TcpClient tcp_client_;
   bool is_little_endian_;
-  std::vector<ChatComponent *> components_;
-  std::mutex components_mutex_;
+  std::vector<std::shared_ptr<ChatComponent>> components_;
 
   // Internal events
   bool onConnected();
@@ -36,14 +35,16 @@ public:
   bool Connect();
   bool Disconnect();
 
-  bool AddComponent(ChatComponent *component);
-  bool RemoveComponent(ChatComponent *component);
+  bool AddComponent(std::shared_ptr<ChatComponent> component);
+  bool RemoveComponent(std::shared_ptr<ChatComponent> component);
 
-  bool GetComponent(ComponentType component_type, ChatComponent *out_component);
+  bool GetComponent(ComponentType component_type,
+    std::shared_ptr<ChatComponent> &out_component);
   template<typename _TComponent>
-  bool GetComponent(ComponentType component_type, _TComponent *out_component) {
+  bool GetComponent(ComponentType component_type,
+    std::shared_ptr<_TComponent> &out_component) {
      return GetComponent(component_type,
-       reinterpret_cast<ChatComponent *>(out_component));
+       reinterpret_cast<std::shared_ptr<ChatComponent> &>(out_component));
   }
 
   TypedBuffer CreateBuffer();

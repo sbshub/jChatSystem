@@ -56,52 +56,50 @@ bool ChatClient::Disconnect() {
   return true;
 }
 
-bool ChatClient::AddComponent(ChatComponent *component) {
-  components_mutex_.lock();
+bool ChatClient::AddComponent(std::shared_ptr<ChatComponent> component) {
+  if (is_connected_) {
+    return false;
+  }
+
   for (auto it = components_.begin(); it != components_.end(); ++it) {
     if (*it == component) {
-      components_mutex_.unlock();
       return false;
     }
   }
   if (!component->Initialize(*this)) {
-    components_mutex_.unlock();
     return false;
   }
   components_.push_back(component);
-  components_mutex_.unlock();
 
   return true;
 }
 
-bool ChatClient::RemoveComponent(ChatComponent *component) {
-  components_mutex_.lock();
+bool ChatClient::RemoveComponent(std::shared_ptr<ChatComponent> component) {
+  if (is_connected_) {
+    return false;
+  }
+
   for (auto it = components_.begin(); it != components_.end(); ++it) {
     if (*it == component) {
       if (!component->Shutdown()) {
         return false;
       }
       components_.erase(it);
-      components_mutex_.unlock();
       return true;
     }
   }
-  components_mutex_.unlock();
 
   return false;
 }
 
 bool ChatClient::GetComponent(ComponentType component_type,
-  ChatComponent *out_component) {
-  components_mutex_.lock();
+  std::shared_ptr<ChatComponent> &out_component) {
   for (auto component : components_) {
     if (component->GetType() == component_type) {
-      components_mutex_.unlock();
       out_component = component;
       return true;
     }
   }
-  components_mutex_.unlock();
   return false;
 }
 
@@ -133,21 +131,17 @@ IPEndpoint ChatClient::GetRemoteEndpoint() {
 }
 
 bool ChatClient::onConnected() {
-  components_mutex_.lock();
   for (auto component : components_) {
     component->OnConnected();
   }
-  components_mutex_.unlock();
 
   return OnConnected();
 }
 
 bool ChatClient::onDisconnected() {
-  components_mutex_.lock();
   for (auto component : components_) {
     component->OnDisconnected();
   }
-  components_mutex_.unlock();
 
   return OnDisconnected();
 }
@@ -184,7 +178,6 @@ bool ChatClient::onDataReceived(Buffer &buffer) {
     // Increase the position of the buffer
     buffer.SetPosition(buffer.GetPosition() + size);
 
-    components_mutex_.lock();
     for (auto component : components_) {
       if (component->GetType() == static_cast<ComponentType>(component_type)) {
         if (component->Handle(message_type, typed_buffer)) {
@@ -193,7 +186,6 @@ bool ChatClient::onDataReceived(Buffer &buffer) {
         }
       }
     }
-    components_mutex_.unlock();
   }
 
   return handled;

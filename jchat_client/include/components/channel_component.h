@@ -40,14 +40,34 @@ public:
   // API functions
   bool JoinChannel(std::string channel_name);
   bool LeaveChannel(std::string channel_name);
+  bool SendMessage(std::string channel_name, std::string message);
+  bool OpUser(std::string channel_name, std::string username);
+  bool DeopUser(std::string channel_name, std::string username);
+  bool KickUser(std::string channel_name, std::string username);
+  bool BanUser(std::string channel_name, std::string username);
+  bool UnbanUser(std::string channel_name, std::string username);
 
   // API events
-  Event<ChannelMessageResult> OnJoinCompleted;
-  Event<ChannelMessageResult> OnLeaveCompleted;
+  Event<ChannelMessageResult, std::string &> OnJoinCompleted;
+  Event<ChannelMessageResult, std::string &> OnLeaveCompleted;
+  Event<ChannelMessageResult, std::string &,
+    std::string &> OnSendMessageCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &> OnOpUserCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &> OnDeopUserCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &> OnKickUserCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &> OnBanUserCompleted;
+  Event<ChannelMessageResult, std::string &,
+    std::string &> OnUnbanUserCompleted;
 
-  Event<ChatChannel &> OnChannelCreated;
+  Event<ChatChannel &, ChatUser &> OnChannelCreated;
   Event<ChatChannel &, ChatUser &> OnChannelJoined;
   Event<ChatChannel &, ChatUser &> OnChannelLeft;
+  Event<ChatChannel &, ChatUser &, std::string &> OnChannelMessage;
+  Event<ChatChannel &, ChatUser &> OnChannelUserOpped;
+  Event<ChatChannel &, ChatUser &> OnChannelUserDeopped;
+  Event<ChatChannel &, ChatUser &> OnChannelUserKicked;
+  Event<ChatChannel &, ChatUser &> OnChannelUserBanned;
+  Event<ChatChannel &, std::string &, std::string &> OnChannelUserUnbanned;
 };
 }
 

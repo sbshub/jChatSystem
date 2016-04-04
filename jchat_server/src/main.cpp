@@ -7,6 +7,7 @@
 */
 
 // Required libraries
+#include "command_line.hpp"
 #include "chat_server.h"
 #include "components/system_component.h"
 #include "components/user_component.h"
@@ -19,13 +20,24 @@
 int main(int argc, char **argv) {
   std::cout << "jChatSystem - Server" << std::endl;
 
-  jchat::ChatServer chat_server("0.0.0.0", 9998);
-  jchat::SystemComponent system_component;
-  jchat::UserComponent user_component;
-  jchat::ChannelComponent channel_component;
-  chat_server.AddComponent(&system_component);
-  chat_server.AddComponent(&user_component);
-  chat_server.AddComponent(&channel_component);
+  jchat::CommandLine command_line(argc, argv);
+  if (argc > 1) {
+	  std::cout << "Starting with arguments..." << std::endl;
+	  std::cout << command_line << std::endl;
+  }
+
+  jchat::ChatServer chat_server(
+    command_line.GetString("ipaddress", "0.0.0.0").c_str(),
+    command_line.GetInt32("port", 9998));
+
+  auto system_component = std::make_shared<jchat::SystemComponent>();
+  auto user_component = std::make_shared<jchat::UserComponent>();
+  auto channel_component = std::make_shared<jchat::ChannelComponent>();
+
+  chat_server.AddComponent(system_component);
+  chat_server.AddComponent(user_component);
+  chat_server.AddComponent(channel_component);
+
   chat_server.OnClientConnected.Add([](jchat::RemoteChatClient &client) {
     std::cout << "Client from "
               << client.Endpoint.ToString()

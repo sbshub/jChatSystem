@@ -45,12 +45,31 @@ public:
 
 
   // API events
-  Event<ChannelMessageResult, ChatUser &> OnJoinCompleted;
-  Event<ChannelMessageResult, ChatUser &> OnLeaveCompleted;
+  // NOTE: The last argument in these (ChatUser &) is always the source user
+  Event<ChannelMessageResult, std::string &, ChatUser &> OnJoinCompleted;
+  Event<ChannelMessageResult, std::string &, ChatUser &> OnLeaveCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &,
+    ChatUser &> OnSendMessageCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &,
+    ChatUser &> OnOpUserCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &,
+    ChatUser &> OnDeopUserCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &,
+    ChatUser &> OnKickUserCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &,
+    ChatUser &> OnBanUserCompleted;
+  Event<ChannelMessageResult, std::string &, std::string &,
+    ChatUser &> OnUnbanUserCompleted;
 
   Event<ChatChannel &> OnChannelCreated;
   Event<ChatChannel &, ChatUser &> OnChannelJoined;
   Event<ChatChannel &, ChatUser &> OnChannelLeft;
+  Event<ChatChannel &, ChatUser &, std::string &> OnChannelMessage;
+  Event<ChatChannel &, ChatUser &> OnChannelUserOpped;
+  Event<ChatChannel &, ChatUser &> OnChannelUserDeopped;
+  Event<ChatChannel &, ChatUser &> OnChannelUserKicked;
+  Event<ChatChannel &, ChatUser &> OnChannelUserBanned;
+  Event<ChatChannel &, std::string &, std::string &> OnChannelUserUnbanned;
 };
 }
 

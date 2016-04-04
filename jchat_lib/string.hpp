@@ -13,7 +13,6 @@
 #include "platform.h"
 #include <stdarg.h>
 #include <string>
-#include <algorithm>
 #include <vector>
 #if defined(OS_LINUX)
 #include <string.h>

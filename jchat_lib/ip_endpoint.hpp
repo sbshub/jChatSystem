@@ -11,7 +11,7 @@
 
 // Required libraries
 #include "platform.h"
-#if defined(OS_LINUX)
+#if defined(OS_LINUX) || defined(OS_OSX) || defined(OS_UNIX)
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>

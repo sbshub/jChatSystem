@@ -8,7 +8,7 @@
 
 #include "components/system_component.h"
 #include "chat_client.h"
-#include "protocol/version.h"
+#include "protocol/protocol.h"
 #include "protocol/components/system_message_type.h"
 
 namespace jchat {
@@ -44,7 +44,7 @@ ComponentType SystemComponent::GetType() {
 }
 
 bool SystemComponent::Handle(uint16_t message_type, TypedBuffer &buffer) {
-  if (message_type == kSystemMessageType_Complete_Hello) {
+  if (message_type == kSystemMessageType_Hello_Complete) {
     uint16_t message_result = 0;
     if (!buffer.ReadUInt16(message_result)) {
       return false;

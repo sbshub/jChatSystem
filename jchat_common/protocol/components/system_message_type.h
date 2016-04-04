@@ -15,7 +15,7 @@
 namespace jchat {
 enum SystemMessageType : uint16_t {
   kSystemMessageType_Hello,
-  kSystemMessageType_Complete_Hello,
+  kSystemMessageType_Hello_Complete,
   kSystemMessageType_Max,
 };
 }

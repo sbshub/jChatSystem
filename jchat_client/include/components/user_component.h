@@ -21,13 +21,8 @@ class UserComponent : public ChatComponent {
 private:
   ChatClient *client_;
 
-  // NOTE: This is the local user
+  // Local user
   std::shared_ptr<ChatUser> user_;
-
-  // NOTE: These are the remote users
-  // TODO: Clear these when shutting down or disconnecting
-  std::map<RemoteChatClient, std::shared_ptr<ChatUser>> users_;
-  std::mutex users_mutex_;
 
 public:
   UserComponent();
@@ -46,10 +41,17 @@ public:
   virtual bool Handle(uint16_t message_type, TypedBuffer &buffer) override;
 
   // API functions
+  bool GetChatUser(std::shared_ptr<ChatUser> &out_user);
 
+  bool Identify(std::string username);
+  bool SendMessage(std::string username, std::string message);
 
   // API events
+  Event<UserMessageResult, std::string &> OnIdentifyCompleted;
+  Event<UserMessageResult, std::string &, std::string &> OnSendMessageCompleted;
 
+  Event<> OnIdentified;
+  Event<std::string &, std::string &, std::string &, std::string &> OnMessage;
 };
 }
 

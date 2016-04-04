@@ -11,6 +11,10 @@
 
 #if defined(__linux__)
 #define OS_LINUX
+#elif defined(__APPLE__)
+#define OS_OSX
+#elif defined(__unix)
+#define OS_UNIX
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__) \
   || defined(__MINGW32__)
 #define OS_WIN

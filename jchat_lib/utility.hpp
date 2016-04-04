@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <ctime>
 #include <mutex>
+#include <sstream>
+#include <iomanip>
 
 namespace jchat {
 class Utility {
@@ -28,6 +30,33 @@ public:
     uint32_t random = (rand() % (max - min + 1)) + min;
     mutex.unlock();
     return random;
+  }
+
+  template<typename _TData>
+  static uint64_t Hash(_TData *data, size_t size) {
+    uint64_t output = size * size;
+    char *ptr_data = (char *)data;
+    while (size--) {
+      output |= 0xFF ^ ptr_data[size];
+    }
+    return output;
+  }
+
+  template<typename _TData>
+  static uint64_t Hash(_TData &data) {
+    return Hash(&data, sizeof(data));
+  }
+
+  template<typename _TData>
+  static std::string HashString(_TData *data, size_t size) {
+    std::stringstream output;
+    output << std::hex << Hash(data, size);
+    return output.str();
+  }
+
+  template<typename _TData>
+  static std::string HashString(_TData &data) {
+    return HashString(&data, sizeof(data));
   }
 };
 }

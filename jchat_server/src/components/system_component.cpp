@@ -7,8 +7,9 @@
 */
 
 #include "components/system_component.h"
+#include "components/user_component.h"
 #include "chat_server.h"
-#include "protocol/version.h"
+#include "protocol/protocol.h"
 #include "protocol/components/system_message_type.h"
 
 namespace jchat {
@@ -37,7 +38,7 @@ bool SystemComponent::OnStop() {
 }
 
 void SystemComponent::OnClientConnected(RemoteChatClient &client) {
-  
+
 }
 
 void SystemComponent::OnClientDisconnected(RemoteChatClient &client) {
@@ -56,13 +57,34 @@ bool SystemComponent::Handle(RemoteChatClient &client, uint16_t message_type,
       || protocol_version != JCHAT_CHAT_PROTOCOL_VERSION) {
       return false;
     }
+
     if (!OnHelloCompleted(client)) {
       return false;
     }
+
+    // Get user component
+    std::shared_ptr<UserComponent> user_component;
+    if (!server_->GetComponent(kComponentType_User, user_component)) {
+      // Internal error, disconnect client
+      return false;
+    }
+
+    // Get the chat client
+    std::shared_ptr<ChatUser> chat_user;
+    if (!user_component->GetChatUser(client, chat_user)) {
+      // Internal error, disconnect client
+      return false;
+    }
+
+    // Set as enabled
+    chat_user->Enabled = true;
+
     TypedBuffer send_buffer = server_->CreateBuffer();
     send_buffer.WriteUInt16(kSystemMessageResult_Ok);
-    return server_->SendUnicast(client, kComponentType_System,
-      kSystemMessageType_Complete_Hello, send_buffer);
+    server_->Send(client, kComponentType_System,
+      kSystemMessageType_Hello_Complete, send_buffer);
+
+	return true;
   }
 
   return false;
